@@ -140,6 +140,7 @@ class GPT4Docstrings:
                 if (
                     method_node.type == "def"
                     and method_node.name not in self.excluded_special_methods
+                    and not method_node.value[0].type == "string"
                 ):
                     method_node.value.insert(0, f'"""\n\t{docstring}\n\t"""')
 
@@ -160,4 +161,3 @@ class GPT4Docstrings:
         """Generates docstrings for undocumented classes / functions"""
         filenames = self.get_filenames_from_paths()
         self._generate_docstrings(filenames)
-        # TODO: Add here some pretty print result

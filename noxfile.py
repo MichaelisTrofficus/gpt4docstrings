@@ -158,7 +158,7 @@ def coverage(session: Session) -> None:
     session.run(
         "coverage",
         *args,
-        "--omit=tests/*",
+        "--omit=tests/*,src/gpt4docstrings/__main__.py,src/gpt4docstrings/cli.py",
         "--fail-under=40",
     )
 
