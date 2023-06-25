@@ -1,0 +1,14 @@
+{
+  "_output_dir": "/Users/moteroperdido/Desktop/projects",
+  "_template": "gh:cjolowicz/cookiecutter-hypermodern-python",
+  "author": "Miguel Otero Pedrido",
+  "copyright_year": "2023",
+  "development_status": "Development Status :: 1 - Planning",
+  "email": "miguel.otero.pedrido.1993@gmail.com",
+  "friendly_name": "gpt4docstrings",
+  "github_user": "MichaelisTrofficus",
+  "license": "MIT",
+  "package_name": "gpt4docstrings",
+  "project_name": "gpt4docstrings",
+  "version": "0.0.0"
+}
