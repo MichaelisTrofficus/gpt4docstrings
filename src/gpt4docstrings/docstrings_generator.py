@@ -1,46 +1,120 @@
+import os
+import pathlib
+import sys
+from fnmatch import fnmatch
 from typing import List
+from typing import Union
 
 from redbaron import RedBaron
 
-from gpt4docstrings import config
+from gpt4docstrings import utils
 
 
 class GPT4Docstrings:
+    def __init__(self, paths: Union[str, List[str]], excluded=None):
+        self.paths = paths
+        self.excluded = excluded or ()
+        self.common_base = pathlib.Path("/")
+        self.excluded_special_methods = [
+            "__new__",
+            "__init__",
+            "__del__",
+            "__repr__",
+            "__str__",
+            "__cmp__",
+            "__hash__",
+            "__nonzero__",
+            "__unicode__",
+            "__getattribute__",
+            "__getattr__",
+            "__setattr__",
+            "__delattr__",
+            "__get__",
+            "__set__",
+            "__delete__",
+            "__len__",
+            "__getitem__",
+            "__setitem__",
+            "__delitem__",
+            "__getslice__",
+            "__setslice__",
+            "__delslice__",
+            "__contains__",
+            "__add__",
+            "__sub__",
+            "__mul__",
+            "__div__",
+            "__truediv__",
+            "__floordiv__",
+            "__mod__",
+            "__divmod__",
+            "__pow__",
+            "__lshift__",
+            "__rshift__",
+            "__and__",
+            "__or__",
+            "__xor__",
+            "__radd__",
+            "__rsub__",
+            "__rmul__",
+            "__rdiv__",
+            "__rtruediv__",
+            "__rfloordiv__",
+            "__rmod__",
+            "__rdivmod__",
+            "__rpow__",
+            "__rlshift__",
+            "__rrshift__",
+        ]
 
-    def __init__(self, paths, conf=None, excluded=None):
-        pass
+    def _filter_files(self, files: List[str]):
+        """
+        Filter files that are explicitly excluded
 
-    def get_filenames_from_paths(self):
-        """Find all files to measure for docstring coverage."""
+        Args:
+            files: A list of files to be filtered
+
+        Yields:
+            Files which are not filtered
+        """
+        for f in files:
+            if not f.endswith(".py"):
+                continue
+
+            # By default, we will ignore __init__.py files
+            basename = os.path.basename(f)
+            if basename == "__init__.py":
+                continue
+
+            if any(fnmatch(f, exc + "*") for exc in self.excluded):
+                continue
+            yield f
+
+    def get_filenames_from_paths(self) -> List[str]:
+        """
+        Find all python files inside `paths` provided by the user
+
+        Returns:
+            A list of file names
+        """
         filenames = []
+
         for path in self.paths:
             if os.path.isfile(path):
                 if not path.endswith(".py"):
-                    msg = (
-                        "E: Invalid file '{}'. Unable interrogate non-Python "
-                        "files.".format(path)
-                    )
-                    click.echo(msg, err=True)
                     return sys.exit(1)
                 filenames.append(path)
                 continue
-            for root, dirs, fs in os.walk(path):
+
+            for root, _, fs in os.walk(path):
                 full_paths = [os.path.join(root, f) for f in fs]
                 filenames.extend(self._filter_files(full_paths))
 
         if not filenames:
-            p = ", ".join(self.paths)
-            msg = "E: No Python files found to interrogate in '{}'.".format(p)
-            click.echo(msg, err=True)
             return sys.exit(1)
 
         self.common_base = utils.get_common_base(filenames)
         return filenames
-
-
-
-    def _get_list_of_nodes(self):
-        pass
 
     def _generate_file_docstrings(self, filename: str):
         """
@@ -48,57 +122,28 @@ class GPT4Docstrings:
 
         Args:
             filename: The filename to be potentially documented
-
-        Returns:
-            A list of `DocsNode`
         """
-        source = RedBaron(open(filename, "r", encoding="utf-8").read())
-
-        for node in source.find_all("class"):
-            node_source_code = node.dumps()
-            # Check if class is complete (just ignore for now __init__)
-            # TODO: Call OpenAI
+        source = RedBaron(open(filename, encoding="utf-8").read())
+        docstring = "This is a generated docstring!!"
 
         for node in source.find_all("def"):
+            if not node.value[
+                0
+            ].type == "string" and not utils.check_def_node_is_class_method(node):
+                node.value.insert(0, f'"""\n{docstring}\n"""')
+
+        for node in source.find_all("class"):
             if not node.value[0].type == "string":
-                # Generate docstrings here!
-                docstring = "This is a generated docstring!!"
-                if node.next and node.next.type == "comment":
-                    node.next.insert_after(f'"""\n{docstring}\n"""')
-                else:
-                    node.value.insert(0, f'"""\n{docstring}\n"""')
+                node.value.insert(0, f'"""\n{docstring}\n"""')
 
-        with open(filename, "w", encoding="utf-8") as file:
-            file.write(source.dumps())
+            for method_node in node.value:
+                if (
+                    method_node.type == "def"
+                    and method_node.name not in self.excluded_special_methods
+                ):
+                    method_node.value.insert(0, f'"""\n\t{docstring}\n\t"""')
 
-        # tree = ast.parse(open(filename, encoding="utf-8").read())
-        # # transformer = DocsTransformer(filename=filename, source=tree, config=self.config)
-        # # new_tree = transformer.visit(tree)
-        # transformer = DocstringWriter()
-        # new_tree = transformer.visit(tree)
-        # ast.fix_missing_locations(new_tree)
-        # src = ast.unparse(new_tree)
-        # with open(filename, "w") as f:
-        #     f.write(src)
-
-        #
-        #
-        #
-        # filtered_nodes = self._filter_nodes(visitor.nodes)
-        # if len(filtered_nodes) == 0:
-        #     return
-        #
-        # # First of all, just take those nodes with source code (containing lineno, etc.)
-        # filtered_nodes = [n for n in filtered_nodes if n.source_code]
-        #
-        # if self.config.ignore_nested_functions:
-        #     filtered_nodes = [
-        #         n for n in filtered_nodes if not n.is_nested_func
-        #     ]
-        # if self.config.ignore_nested_classes:
-        #     filtered_nodes = self._filter_inner_nested(filtered_nodes)
-        #
-        # return filtered_nodes
+        utils.write_updated_source_to_file(source, filename)
 
     def _generate_docstrings(self, filenames: List[str]):
         """
@@ -110,12 +155,9 @@ class GPT4Docstrings:
         """
         for filename in filenames:
             self._generate_file_docstrings(filename)
-            # TODO: We should call the LLM API and write the docstrings for whatever function we want
-            print(1)
 
     def generate_docstrings(self):
-        """
-        Generates docstrings for undocumented classes / functions
-        """
+        """Generates docstrings for undocumented classes / functions"""
         filenames = self.get_filenames_from_paths()
-        return self._generate_docstrings(filenames)
+        self._generate_docstrings(filenames)
+        # TODO: Add here some pretty print result
