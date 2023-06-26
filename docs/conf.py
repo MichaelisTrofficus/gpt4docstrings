@@ -10,6 +10,7 @@ extensions = [
     "sphinx.ext.graphviz",
     "sphinx.ext.autosummary",
     "myst_parser",
+    "sphinx_click",
 ]
 autodoc_typehints = "description"
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"

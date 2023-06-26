@@ -6,7 +6,6 @@ from gpt4docstrings import GPT4Docstrings
 
 
 def test_find_all_functions():
-    print(pytest.TESTS_PATH)
     docstrings_generator = GPT4Docstrings(
         paths=[os.path.join(pytest.TESTS_PATH, "resources/")]
     )
