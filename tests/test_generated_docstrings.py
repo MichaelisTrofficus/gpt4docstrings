@@ -7,13 +7,19 @@ from gpt4docstrings import GPT4Docstrings
 from gpt4docstrings import utils
 
 
-def test_all_docstrings(tmp_path, mocker, write_source_side_effect):
+def test_generate_docstrings(
+    tmp_path,
+    mocker,
+    write_source_side_effect,
+    test_openai_api_key,
+    mock_generate_function_docstring,
+    mock_generate_class_docstring,
+):
     tmp_file = tmp_path / "test.py"
 
     mocker.patch(
-        "gpt4docstrings.docstrings_generator.utils.write_updated_source_to_file",
-        return_value=None,
-        side_effect=write_source_side_effect(tmp_file),
+        "gpt4docstrings.generate_docstrings.utils.write_updated_source_to_file",
+        side_effect=write_source_side_effect(filename=tmp_file),
     )
 
     docstrings_generator = GPT4Docstrings(
@@ -36,10 +42,8 @@ def test_all_docstrings(tmp_path, mocker, write_source_side_effect):
         )
 
         for method_node in node.value:
-            if (
-                method_node.type == "def"
-                and method_node.name
-                not in docstrings_generator.excluded_special_methods
+            if method_node.type == "def" and not utils.check_is_private_method(
+                method_node
             ):
                 assert (
                     method_node.value[0].value

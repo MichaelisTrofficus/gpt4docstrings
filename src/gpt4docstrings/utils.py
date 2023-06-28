@@ -2,6 +2,7 @@ import os
 import pathlib
 from typing import List
 
+from redbaron import Node
 from redbaron import RedBaron
 
 
@@ -48,3 +49,21 @@ def write_updated_source_to_file(source: RedBaron, filename: str):
     """
     with open(filename, "w", encoding="utf-8") as file:
         file.write(source.dumps())
+
+
+def check_is_private_method(node: Node) -> bool:
+    """
+    Check if current node is a private method in a class.
+
+    Args:
+        node: A RedBaron node
+
+    Returns:
+        `True` if the method is private, `False` otherwise
+    """
+    return all(
+        [
+            node.name.startswith("__"),
+            node.name.endswith("__"),
+        ]
+    )
