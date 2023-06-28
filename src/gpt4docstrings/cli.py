@@ -15,7 +15,7 @@ import gpt4docstrings
 @click.option(
     "-d",
     "--docstrings_style",
-    type=click.Choice(["Google", "Numpy", "reStructuredText"]),
+    type=click.STRING,
     default="google",
     help="Docstring style. Choose between `google`, `numpy` or `reStructuredText`",
 )

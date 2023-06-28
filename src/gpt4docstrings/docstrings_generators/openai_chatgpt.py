@@ -15,6 +15,12 @@ class ChatGPTDocstringGenerator:
         self.model = model
         self.docstrings_style = docstrings_style
 
+        if self.docstrings_style not in ["google", "numpy" or "reStructuredText"]:
+            raise ValueError(
+                "Docstring style no found. "
+                "Choose between `google`, `numpy` or `reStructuredText`"
+            )
+
         if not self.api_key:
             raise ValueError("Please, provide the OpenAI API Key")
 
