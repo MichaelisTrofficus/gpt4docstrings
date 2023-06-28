@@ -1,3 +1,4 @@
+import json
 import os
 
 import openai
@@ -29,7 +30,7 @@ class ChatGPTDocstringGenerator:
             messages=messages,
             temperature=0,  # TODO: Should we let user configure temperature??
         )
-        return response.choices[0].message["content"]
+        return json.loads(response.choices[0].message["content"])
 
     def generate_function_docstring(self, source: str) -> dict:
         """
@@ -63,19 +64,22 @@ class ChatGPTDocstringGenerator:
 
                 {'docstring': <class docstring>, '<method1's name>': <docstring for method1>, ...}
         """
-        prompt = f"""
+        prompt = (
+            """
         Your task is to generate an detailed and technical google style docstring for the class delimited by triple
         quotes. The output should be a JSON with the following format:
 
         {
-            'docstring': <class docstring>,
-            '<method1's name>': <docstring for method1>,
-            '<method2's name>': <docstring for method2>,
+            "docstring": <class docstring>,
+            "<method1's name>": <docstring for method1>,
+            "<method2's name>": <docstring for method2>,
             ...
         }
 
         '''
-        {source}
+        %s
         '''
         """
+            % source
+        )
         return self._get_completion(prompt)
