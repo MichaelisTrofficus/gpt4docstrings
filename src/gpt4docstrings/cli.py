@@ -6,6 +6,23 @@ import gpt4docstrings
 
 
 @click.option(
+    "-m",
+    "--model",
+    type=click.STRING,
+    default="gpt-3.5-turbo",
+    help=("The model to be used by `gpt4docstrings`. By default, `gpt-3.5-turbo`."),
+)
+@click.option(
+    "-k",
+    "--api_key",
+    type=click.STRING,
+    default="",
+    help=(
+        "OpenAI's API key. If not provided, `gpt4docstrings` will try to access `OPENAI_API_KEY` environment "
+        "variable."
+    ),
+)
+@click.option(
     "-e",
     "--exclude",
     multiple=True,
@@ -44,5 +61,7 @@ def main(paths, **kwargs):
     docstrings_generator = gpt4docstrings.GPT4Docstrings(
         paths=paths,
         excluded=kwargs["exclude"],
+        model=kwargs["model"],
+        api_key=kwargs["api_key"],
     )
     docstrings_generator.generate_docstrings()
