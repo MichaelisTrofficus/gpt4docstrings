@@ -5,7 +5,7 @@ import pytest
 from gpt4docstrings import GPT4Docstrings
 
 
-def test_find_all_functions():
+def test_find_all_functions(test_openai_api_key):
     docstrings_generator = GPT4Docstrings(
         paths=[os.path.join(pytest.TESTS_PATH, "resources/")]
     )
@@ -16,7 +16,7 @@ def test_find_all_functions():
     }
 
 
-def test_exclude_functions():
+def test_exclude_functions(test_openai_api_key):
     docstrings_generator = GPT4Docstrings(
         paths=[os.path.join(pytest.TESTS_PATH, "resources")],
         excluded=[os.path.join(pytest.TESTS_PATH, "resources/package_1/*")],

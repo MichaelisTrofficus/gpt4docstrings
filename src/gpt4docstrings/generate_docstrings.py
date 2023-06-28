@@ -8,64 +8,23 @@ from typing import Union
 from redbaron import RedBaron
 
 from gpt4docstrings import utils
+from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
 
 
 class GPT4Docstrings:
-    def __init__(self, paths: Union[str, List[str]], excluded=None):
+    def __init__(
+        self,
+        paths: Union[str, List[str]],
+        excluded=None,
+        model: str = "gpt-3.5-turbo",
+        api_key: str = None,
+    ):
         self.paths = paths
         self.excluded = excluded or ()
         self.common_base = pathlib.Path("/")
-        self.excluded_special_methods = [
-            "__new__",
-            "__init__",
-            "__del__",
-            "__repr__",
-            "__str__",
-            "__cmp__",
-            "__hash__",
-            "__nonzero__",
-            "__unicode__",
-            "__getattribute__",
-            "__getattr__",
-            "__setattr__",
-            "__delattr__",
-            "__get__",
-            "__set__",
-            "__delete__",
-            "__len__",
-            "__getitem__",
-            "__setitem__",
-            "__delitem__",
-            "__getslice__",
-            "__setslice__",
-            "__delslice__",
-            "__contains__",
-            "__add__",
-            "__sub__",
-            "__mul__",
-            "__div__",
-            "__truediv__",
-            "__floordiv__",
-            "__mod__",
-            "__divmod__",
-            "__pow__",
-            "__lshift__",
-            "__rshift__",
-            "__and__",
-            "__or__",
-            "__xor__",
-            "__radd__",
-            "__rsub__",
-            "__rmul__",
-            "__rdiv__",
-            "__rtruediv__",
-            "__rfloordiv__",
-            "__rmod__",
-            "__rdivmod__",
-            "__rpow__",
-            "__rlshift__",
-            "__rrshift__",
-        ]
+        self.docstring_generator = ChatGPTDocstringGenerator(
+            api_key=api_key, model=model
+        )
 
     def _filter_files(self, files: List[str]):
         """
@@ -124,25 +83,30 @@ class GPT4Docstrings:
             filename: The filename to be potentially documented
         """
         source = RedBaron(open(filename, encoding="utf-8").read())
-        docstring = "This is a generated docstring!!"
 
         for node in source.find_all("def"):
             if not node.value[
                 0
             ].type == "string" and not utils.check_def_node_is_class_method(node):
-                node.value.insert(0, f'"""\n{docstring}\n"""')
+                docstring_dict = self.docstring_generator.generate_function_docstring(
+                    node.dumps()
+                )
+                node.value.insert(0, docstring_dict["docstring"])
 
         for node in source.find_all("class"):
             if not node.value[0].type == "string":
-                node.value.insert(0, f'"""\n{docstring}\n"""')
+                docstring_dict = self.docstring_generator.generate_class_docstring(
+                    node.dumps()
+                )
+                node.value.insert(0, docstring_dict["docstring"])
 
-            for method_node in node.value:
-                if (
-                    method_node.type == "def"
-                    and method_node.name not in self.excluded_special_methods
-                    and not method_node.value[0].type == "string"
-                ):
-                    method_node.value.insert(0, f'"""\n\t{docstring}\n\t"""')
+                for method_node in node.value:
+                    if (
+                        method_node.type == "def"
+                        and not utils.check_is_private_method(method_node)
+                        and not method_node.value[0].type == "string"
+                    ):
+                        method_node.value.insert(0, docstring_dict[method_node.name])
 
         utils.write_updated_source_to_file(source, filename)
 
@@ -157,7 +121,13 @@ class GPT4Docstrings:
         for filename in filenames:
             self._generate_file_docstrings(filename)
 
-    def generate_docstrings(self):
-        """Generates docstrings for undocumented classes / functions"""
+    def generate_docstrings(self, default_docstring: str = None):
+        """
+        Generates docstrings for undocumented classes / functions
+
+        Args:
+            default_docstring: A default docstring to be created when no
+
+        """
         filenames = self.get_filenames_from_paths()
         self._generate_docstrings(filenames)
