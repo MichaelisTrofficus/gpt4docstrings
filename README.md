@@ -27,11 +27,7 @@
 for your Python code. Select a path / paths where you want `gpt4docstrings`
 to be applied and wait for the results!!
 
-Poner video aqui
-
-## Features
-
-- TODO
+![](images/usage.gif)
 
 ## Requirements
 

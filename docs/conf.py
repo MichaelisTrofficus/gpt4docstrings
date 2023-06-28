@@ -13,4 +13,4 @@ extensions = [
     "sphinx_click",
 ]
 autodoc_typehints = "description"
-html_theme = "furo"
+html_theme = "sphinx_rtd_theme"
