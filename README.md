@@ -21,13 +21,21 @@
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
 
+## What is `gpt4docstrings`?
+
+`gpt4docstrings` is a library that helps you to write docstrings
+for your Python code. Select a path / paths where you want `gpt4docstrings`
+to be applied and wait for the results!!
+
+Poner video aqui
+
 ## Features
 
 - TODO
 
 ## Requirements
 
-- TODO
+`gpt4docstrings` supports Python 3.9 and above.
 
 ## Installation
 
