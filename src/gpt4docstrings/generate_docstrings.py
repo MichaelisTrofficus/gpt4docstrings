@@ -17,13 +17,14 @@ class GPT4Docstrings:
         paths: Union[str, List[str]],
         excluded=None,
         model: str = "gpt-3.5-turbo",
+        docstrings_style: str = "google",
         api_key: str = None,
     ):
         self.paths = paths
         self.excluded = excluded or ()
         self.common_base = pathlib.Path("/")
         self.docstring_generator = ChatGPTDocstringGenerator(
-            api_key=api_key, model=model
+            api_key=api_key, model=model, docstrings_style=docstrings_style
         )
 
     def _filter_files(self, files: List[str]):
@@ -107,7 +108,7 @@ class GPT4Docstrings:
                         and not method_node.value[0].type == "string"
                     ):
                         method_node.value.insert(
-                            0, f'"""\n\t{docstring_dict[method_node.name]}\n\t"""'
+                            0, f'"""\n{docstring_dict[method_node.name]}\n"""'
                         )
 
         utils.write_updated_source_to_file(source, filename)

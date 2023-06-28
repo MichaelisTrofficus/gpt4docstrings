@@ -10,17 +10,21 @@ import gpt4docstrings
     "--model",
     type=click.STRING,
     default="gpt-3.5-turbo",
-    help=("The model to be used by `gpt4docstrings`. By default, `gpt-3.5-turbo`."),
+    help="The model to be used by `gpt4docstrings`. By default, `gpt-3.5-turbo`.",
+)
+@click.option(
+    "-d",
+    "--docstrings_style",
+    type=click.Choice(["Google", "Numpy", "reStructuredText"]),
+    default="google",
+    help="Docstring style. Choose between `google`, `numpy` or `reStructuredText`",
 )
 @click.option(
     "-k",
     "--api_key",
     type=click.STRING,
     default="",
-    help=(
-        "OpenAI's API key. If not provided, `gpt4docstrings` will try to access `OPENAI_API_KEY` environment "
-        "variable."
-    ),
+    help="OpenAI's API key. If not provided, `gpt4docstrings` will try to access `OPENAI_API_KEY` environment variable.",
 )
 @click.option(
     "-e",
@@ -34,10 +38,7 @@ import gpt4docstrings
         resolve_path=True,
     ),
     default=(),
-    help=(
-        "Exclude PATHs of files and/or directories. Multiple `-e/--exclude` "
-        "invocations supported."
-    ),
+    help="Exclude PATHs of files and/or directories. Multiple `-e/--exclude` invocations supported.",
 )
 @click.help_option("-h", "--help")
 @click.argument(
