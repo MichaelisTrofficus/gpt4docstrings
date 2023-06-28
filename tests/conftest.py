@@ -9,15 +9,15 @@ def pytest_configure():
 
 def generate_test_function_docstring(source: str):
     base_docstring = "This is a generated docstring!!"
-    return {"docstring": f'"""\n{base_docstring}\n"""'}
+    return {"docstring": f"{base_docstring}"}
 
 
 def generate_test_class_docstring(source: str):
     base_docstring = "This is a generated docstring!!"
     return {
-        "docstring": f'"""\n{base_docstring}\n"""',
-        "add_word_to_attr1": f'"""\n\t{base_docstring}\n\t"""',
-        "pow_attr2": f'"""\n\t{base_docstring}\n\t"""',
+        "docstring": f"{base_docstring}",
+        "add_word_to_attr1": f"{base_docstring}",
+        "pow_attr2": f"{base_docstring}",
     }
 
 

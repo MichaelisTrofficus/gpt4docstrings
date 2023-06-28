@@ -91,14 +91,14 @@ class GPT4Docstrings:
                 docstring_dict = self.docstring_generator.generate_function_docstring(
                     node.dumps()
                 )
-                node.value.insert(0, docstring_dict["docstring"])
+                node.value.insert(0, f'"""\n{docstring_dict["docstring"]}\n"""')
 
         for node in source.find_all("class"):
             if not node.value[0].type == "string":
                 docstring_dict = self.docstring_generator.generate_class_docstring(
                     node.dumps()
                 )
-                node.value.insert(0, docstring_dict["docstring"])
+                node.value.insert(0, f'"""\n{docstring_dict["docstring"]}\n"""')
 
                 for method_node in node.value:
                     if (
@@ -106,7 +106,9 @@ class GPT4Docstrings:
                         and not utils.check_is_private_method(method_node)
                         and not method_node.value[0].type == "string"
                     ):
-                        method_node.value.insert(0, docstring_dict[method_node.name])
+                        method_node.value.insert(
+                            0, f'"""\n\t{docstring_dict[method_node.name]}\n\t"""'
+                        )
 
         utils.write_updated_source_to_file(source, filename)
 
@@ -121,13 +123,7 @@ class GPT4Docstrings:
         for filename in filenames:
             self._generate_file_docstrings(filename)
 
-    def generate_docstrings(self, default_docstring: str = None):
-        """
-        Generates docstrings for undocumented classes / functions
-
-        Args:
-            default_docstring: A default docstring to be created when no
-
-        """
+    def generate_docstrings(self):
+        """Generates docstrings for undocumented classes / functions"""
         filenames = self.get_filenames_from_paths()
         self._generate_docstrings(filenames)
