@@ -6,6 +6,8 @@ on:
       - main
       - master
 
+permissions: write-all
+
 jobs:
   release:
     name: Release
