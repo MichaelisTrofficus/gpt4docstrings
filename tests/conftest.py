@@ -8,16 +8,16 @@ def pytest_configure():
 
 
 def generate_test_function_docstring(source: str):
-    base_docstring = "This is a generated docstring!!"
-    return {"docstring": f"{base_docstring}"}
+    base_docstring = "This is a generated docstring"
+    return {"docstring": f'"""\n{base_docstring}\n"""'}
 
 
 def generate_test_class_docstring(source: str):
-    base_docstring = "This is a generated docstring!!"
+    base_docstring = "This is a generated docstring"
     return {
-        "docstring": f"{base_docstring}",
-        "add_word_to_attr1": f"{base_docstring}",
-        "pow_attr2": f"{base_docstring}",
+        "docstring": f'"""\n{base_docstring}\n"""',
+        "add_word_to_attr1": f'"""\n{base_docstring}\n"""',
+        "pow_attr2": f'"""\n{base_docstring}\n"""',
     }
 
 
