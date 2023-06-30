@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gpt4docstrings"
-version = "0.0.2"
+version = "0.0.3"
 description = "gpt4docstrings"
 authors = ["Miguel Otero Pedrido <miguel.otero.pedrido.1993@gmail.com>"]
 license = "MIT"
