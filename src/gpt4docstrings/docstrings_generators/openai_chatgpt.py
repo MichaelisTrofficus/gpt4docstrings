@@ -1,7 +1,8 @@
+import ast
 import os
+import time
 
 import openai
-from redbaron import RedBaron
 
 
 class ChatGPTDocstringGenerator:
@@ -29,7 +30,7 @@ class ChatGPTDocstringGenerator:
 
         openai.api_key = self.api_key
 
-    def _get_completion(self, prompt: str) -> dict:
+    def _get_completion(self, prompt: str) -> str:
         """
         Gets completion of prompt using OpenAI API
 
@@ -39,13 +40,23 @@ class ChatGPTDocstringGenerator:
         Returns:
             ChatGPT response
         """
-        messages = [{"role": "user", "content": prompt}]
-        response = openai.ChatCompletion.create(
-            model=self.model,
-            messages=messages,
-            temperature=0,  # TODO: Should we let user configure temperature??
-        )
-        return response.choices[0].message["content"]
+        result = ""
+        for _ in range(0, 5):
+            while True:
+                try:
+                    messages = [{"role": "user", "content": prompt}]
+                    response = openai.ChatCompletion.create(
+                        model=self.model,
+                        messages=messages,
+                        temperature=0,  # TODO: Let user configure temperature??
+                    )
+                    result = response.choices[0].message["content"]
+                except openai.error.APIError as e:
+                    print(f"OpenAI API returned an API Error: {e}")
+                    time.sleep(2)
+                    continue
+                break
+        return result
 
     def generate_function_docstring(self, source: str) -> dict:
         """
@@ -67,12 +78,14 @@ class ChatGPTDocstringGenerator:
         )
         prompt += "\n" + source + "\n"
 
-        docstrings = {}
-
-        for node in RedBaron(self._get_completion(prompt)).find_all("def"):
-            docstrings["docstring"] = node.value[0].value
-
-        return docstrings
+        # Use ast in this case because it generates a docstring without unintended indentations
+        tree = ast.parse(self._get_completion(prompt))
+        function_docs = [
+            ast.get_docstring(f)
+            for f in ast.walk(tree)
+            if isinstance(f, ast.FunctionDef)
+        ]
+        return {"docstring": f'"""\n{function_docs[0]}\n"""'}
 
     def generate_class_docstring(self, source: str) -> dict:
         """
@@ -98,11 +111,25 @@ class ChatGPTDocstringGenerator:
 
         docstrings = {}
 
-        for node in RedBaron(self._get_completion(prompt)).find_all("class"):
-            docstrings["docstring"] = node.value[0].value
+        # Use ast in this case because it generates a docstring without unintended indentations
+        tree = ast.parse(self._get_completion(prompt))
+        class_node = [c for c in ast.walk(tree) if isinstance(c, ast.ClassDef)][0]
+        method_nodes = [
+            f for f in ast.walk(class_node) if isinstance(f, ast.FunctionDef)
+        ]
 
-            for method_node in node.value:
-                if method_node.type == "def":
-                    docstrings[method_node.name] = method_node[0].value
+        for method_node in method_nodes:
+            # TODO: This sucks right now because we need to manually modify the indentation.
+            #  Need to think about some clever way to obtain the docstrings with the correct indentation
+            method_docstring = f'"""\n{ast.get_docstring(method_node)}\n"""'
+            indented_method_docstring = ""
+            for doc_line in method_docstring.split("\n"):
+                # TODO: Right now I have to add tabs instead of spaces which generates a
+                #  `PEP 8: W191 indentation contains tabs`. Right now the way to fix this is to manually
+                #  refactor the classes or to use tools like `black` for code formatting.
+                indented_method_docstring += "\t" + doc_line + "\n"
+            docstrings[method_node.name] = indented_method_docstring
+
+        docstrings["docstring"] = f'"""\n{ast.get_docstring(class_node)}\n"""'
 
         return docstrings
