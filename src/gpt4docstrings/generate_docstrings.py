@@ -92,14 +92,14 @@ class GPT4Docstrings:
                 docstring_dict = self.docstring_generator.generate_function_docstring(
                     node.dumps()
                 )
-                node.value.insert(0, f'"""\n{docstring_dict["docstring"]}\n"""')
+                node.value.insert(0, docstring_dict["docstring"])
 
         for node in source.find_all("class"):
             if not node.value[0].type == "string":
                 docstring_dict = self.docstring_generator.generate_class_docstring(
                     node.dumps()
                 )
-                node.value.insert(0, f'"""\n{docstring_dict["docstring"]}\n"""')
+                node.value.insert(0, docstring_dict["docstring"])
 
                 for method_node in node.value:
                     if (
@@ -107,9 +107,7 @@ class GPT4Docstrings:
                         and not utils.check_is_private_method(method_node)
                         and not method_node.value[0].type == "string"
                     ):
-                        method_node.value.insert(
-                            0, f'"""\n{docstring_dict[method_node.name]}\n"""'
-                        )
+                        method_node.value.insert(0, docstring_dict[method_node.name])
 
         utils.write_updated_source_to_file(source, filename)
 

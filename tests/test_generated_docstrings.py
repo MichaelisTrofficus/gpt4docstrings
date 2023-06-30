@@ -32,14 +32,11 @@ def test_generate_docstrings(
     for node in source.find_all("def"):
         if not utils.check_def_node_is_class_method(node):
             assert (
-                node.value[0].value
-                == '"""\n    This is a generated docstring!!\n    """'
+                node.value[0].value == '"""\n    This is a generated docstring\n    """'
             )
 
     for node in source.find_all("class"):
-        assert (
-            node.value[0].value == '"""\n    This is a generated docstring!!\n    """'
-        )
+        assert node.value[0].value == '"""\n    This is a generated docstring\n    """'
 
         for method_node in node.value:
             if method_node.type == "def" and not utils.check_is_private_method(
@@ -47,5 +44,5 @@ def test_generate_docstrings(
             ):
                 assert (
                     method_node.value[0].value
-                    == '"""\n    This is a generated docstring!!\n    """'
+                    == '"""\n    This is a generated docstring\n    """'
                 )
