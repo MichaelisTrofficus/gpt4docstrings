@@ -40,23 +40,21 @@ class ChatGPTDocstringGenerator:
         Returns:
             ChatGPT response
         """
-        result = ""
-        for _ in range(0, 5):
-            while True:
-                try:
-                    messages = [{"role": "user", "content": prompt}]
-                    response = openai.ChatCompletion.create(
-                        model=self.model,
-                        messages=messages,
-                        temperature=0,  # TODO: Let user configure temperature??
-                    )
-                    result = response.choices[0].message["content"]
-                except openai.error.APIError as e:
-                    print(f"OpenAI API returned an API Error: {e}")
-                    time.sleep(2)
-                    continue
-                break
-        return result
+        max_retries = 5
+        retries = 0
+        messages = [{"role": "user", "content": prompt}]
+
+        while retries < max_retries:
+            try:
+                response = openai.ChatCompletion.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=0,  # TODO: Let user configure temperature??
+                )
+                return response.choices[0].message["content"]
+            except openai.error.APIError:
+                time.sleep(5)
+                retries += 1
 
     def generate_function_docstring(self, source: str) -> dict:
         """
