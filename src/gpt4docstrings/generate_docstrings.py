@@ -62,7 +62,10 @@ class GPT4Docstrings:
             if os.path.isfile(path):
                 if not path.endswith(".py"):
                     return sys.exit(1)
-                filenames.append(path)
+
+                if not any(fnmatch(path, exc + "*") for exc in self.excluded):
+                    filenames.append(path)
+
                 continue
 
             for root, _, fs in os.walk(path):
@@ -126,3 +129,4 @@ class GPT4Docstrings:
         """Generates docstrings for undocumented classes / functions"""
         filenames = self.get_filenames_from_paths()
         self._generate_docstrings(filenames)
+        return filenames

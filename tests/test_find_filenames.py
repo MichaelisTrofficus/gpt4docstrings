@@ -19,7 +19,7 @@ def test_find_all_functions(test_openai_api_key):
 def test_exclude_functions(test_openai_api_key):
     docstrings_generator = GPT4Docstrings(
         paths=[os.path.join(pytest.TESTS_PATH, "resources")],
-        excluded=[os.path.join(pytest.TESTS_PATH, "resources/package_1/*")],
+        excluded=[os.path.join(pytest.TESTS_PATH, "resources/package_1/module_2.py")],
     )
     py_files = docstrings_generator.get_filenames_from_paths()
     assert set(py_files) == {f"{pytest.TESTS_PATH}/resources/module_1.py"}
