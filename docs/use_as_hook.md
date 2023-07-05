@@ -6,7 +6,7 @@ All you have to do is add it to your configuration file and you're done!
 ```yaml
 repos:
   - repo: https://github.com/MichaelisTrofficus/gpt4docstrings
-    rev: v0.0.5
+    rev: v0.0.6
     hooks:
       - id: gpt4docstrings
         name: gpt4docstrings
