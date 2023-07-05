@@ -58,5 +58,4 @@ def main(paths, **kwargs):
         model=kwargs["model"],
         api_key=kwargs["api_key"],
     )
-    filenames = docstrings_generator.generate_docstrings()
-    print(filenames)
+    docstrings_generator.generate_docstrings()

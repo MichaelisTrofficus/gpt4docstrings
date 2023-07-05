@@ -6,7 +6,7 @@ end-before: <!-- github-only -->
 
 [license]: license
 [contributor guide]: contributing
-[command-line reference]: usage
+[command-line reference]: use_as_hook
 
 ```{toctree}
 ---
@@ -15,7 +15,8 @@ maxdepth: 1
 caption: User Guide
 ---
 
-usage
+use_as_cli
+use_as_hook
 contributing
 Code of Conduct <codeofconduct>
 License <license>
