@@ -325,5 +325,5 @@ pyrightconfig.json
 /dist/
 /docs/_build/
 /src/*.egg-info/
-test_chatgpt.py
-testing_battery.py
+chatgpt_experiment.py
+chatgpt_battery.py

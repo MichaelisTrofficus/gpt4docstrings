@@ -13,13 +13,6 @@ import gpt4docstrings
     help="The model to be used by `gpt4docstrings`. By default, `gpt-3.5-turbo`.",
 )
 @click.option(
-    "-d",
-    "--docstrings_style",
-    type=click.STRING,
-    default="google",
-    help="Docstring style. Choose between `google`, `numpy` or `reStructuredText`",
-)
-@click.option(
     "-k",
     "--api_key",
     type=click.STRING,
