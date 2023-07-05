@@ -186,7 +186,7 @@ def docs_build(session: Session) -> None:
         args.insert(0, "--color")
 
     session.install(".")
-    session.install("sphinx", "myst-parser", "sphinx-click", "sphinx_rtd_theme", "furo")
+    session.install("sphinx", "myst-parser", "sphinx-click", "sphinx_rtd_theme")
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
@@ -206,7 +206,6 @@ def docs(session: Session) -> None:
         "myst-parser",
         "sphinx-click",
         "sphinx_rtd_theme",
-        "furo",
     )
 
     build_dir = Path("docs", "_build")

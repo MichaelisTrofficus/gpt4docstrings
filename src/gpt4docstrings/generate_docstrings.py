@@ -129,4 +129,3 @@ class GPT4Docstrings:
         """Generates docstrings for undocumented classes / functions"""
         filenames = self.get_filenames_from_paths()
         self._generate_docstrings(filenames)
-        return filenames
