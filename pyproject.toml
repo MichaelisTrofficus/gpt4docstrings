@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gpt4docstrings"
-version = "0.0.4"
+version = "0.0.5"
 description = "gpt4docstrings"
 authors = ["Miguel Otero Pedrido <miguel.otero.pedrido.1993@gmail.com>"]
 license = "MIT"
@@ -9,7 +9,7 @@ homepage = "https://github.com/MichaelisTrofficus/gpt4docstrings"
 repository = "https://github.com/MichaelisTrofficus/gpt4docstrings"
 documentation = "https://gpt4docstrings.readthedocs.io"
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
 ]
 
 [tool.poetry.urls]
