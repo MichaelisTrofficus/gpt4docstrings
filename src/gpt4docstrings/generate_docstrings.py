@@ -5,9 +5,13 @@ from fnmatch import fnmatch
 from typing import List
 from typing import Union
 
+import click
+from colorama import Fore
 from redbaron import RedBaron
+from tabulate import tabulate
 
 from gpt4docstrings import utils
+from gpt4docstrings.ascii_title import title
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
 
 
@@ -18,6 +22,7 @@ class GPT4Docstrings:
         excluded=None,
         model: str = "gpt-3.5-turbo",
         api_key: str = None,
+        verbose: int = 0,
     ):
         self.paths = paths
         self.excluded = excluded or ()
@@ -25,6 +30,18 @@ class GPT4Docstrings:
         self.docstring_generator = ChatGPTDocstringGenerator(
             api_key=api_key, model=model
         )
+        self.verbose = verbose
+        self.documented_nodes = []
+
+    def print_pretty_documentation_table(self):
+        """
+        Prints a pretty table to terminal when verbose is greater than zero. The table contains
+        one row per each node (function or class) examined by `gpt4docstrings`. One of the columns
+        refers to the node name and the other one shows if the node has been documented.
+        """
+        headers = ["Filename", "Documented Functions / Classes"]
+        table = [x for x in self.documented_nodes]
+        print(Fore.GREEN + tabulate(table, headers, tablefmt="outline"))
 
     def _filter_files(self, files: List[str]):
         """
@@ -86,15 +103,18 @@ class GPT4Docstrings:
             filename: The filename to be potentially documented
         """
         source = RedBaron(open(filename, encoding="utf-8").read())
+        click.echo(click.style(f"* Documenting file {filename} ... \n", fg="green"))
 
         for node in source.find_all("def"):
-            if not node.value[
-                0
-            ].type == "string" and not utils.check_def_node_is_class_method(node):
-                docstring_dict = self.docstring_generator.generate_function_docstring(
-                    node.dumps()
-                )
-                node.value.insert(0, docstring_dict["docstring"])
+            if not utils.check_def_node_is_class_method(node):
+                if not node.value[0].type == "string":
+                    docstring_dict = (
+                        self.docstring_generator.generate_function_docstring(
+                            node.dumps()
+                        )
+                    )
+                    node.value.insert(0, docstring_dict["docstring"])
+                    self.documented_nodes.append([filename, node.name])
 
         for node in source.find_all("class"):
             if not node.value[0].type == "string":
@@ -111,8 +131,13 @@ class GPT4Docstrings:
                     ):
                         method_node.value.insert(0, docstring_dict[method_node.name])
 
+                self.documented_nodes.append([filename, node.name])
+
         utils.write_updated_source_to_file(source, filename)
         os.system(f"docformatter --in-place {filename}")
+
+        if self.verbose > 0:
+            self.print_pretty_documentation_table()
 
     def _generate_docstrings(self, filenames: List[str]):
         """
@@ -128,4 +153,6 @@ class GPT4Docstrings:
     def generate_docstrings(self):
         """Generates docstrings for undocumented classes / functions"""
         filenames = self.get_filenames_from_paths()
+
+        click.echo(click.style(title, fg="green"))
         self._generate_docstrings(filenames)

@@ -33,6 +33,13 @@ import gpt4docstrings
     default=(),
     help="Exclude PATHs of files and/or directories. Multiple `-e/--exclude` invocations supported.",
 )
+@click.option(
+    "-v",
+    "--verbose",
+    type=click.INT,
+    default=0,
+    help="Verbosity parameter. Defaults to 0.",
+)
 @click.help_option("-h", "--help")
 @click.argument(
     "paths",
@@ -57,5 +64,6 @@ def main(paths, **kwargs):
         excluded=kwargs["exclude"],
         model=kwargs["model"],
         api_key=kwargs["api_key"],
+        verbose=kwargs["verbose"],
     )
     docstrings_generator.generate_docstrings()
