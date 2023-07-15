@@ -1,5 +1,6 @@
 import os
 import pathlib
+import re
 from typing import List
 
 from redbaron import Node
@@ -7,14 +8,18 @@ from redbaron import RedBaron
 
 
 def get_common_base(files: List[str]) -> str:
-    """
-    Finds the common parent base for a list of files.
+    """Returns the common base directory path for a list of files.
 
     Args:
-        files: A list of files
+        files (List[str]): A list of file paths.
 
     Returns:
-        Common base path
+        str: The common base directory path.
+
+    Example:
+        files = ['/path/to/file1.txt', '/path/to/file2.txt', '/path/to/file3.txt']
+        get_common_base(files)
+        '/path/to'
     """
     common_base = pathlib.Path(os.path.commonprefix(files))
     while not common_base.exists():
@@ -23,14 +28,13 @@ def get_common_base(files: List[str]) -> str:
 
 
 def check_def_node_is_class_method(node) -> bool:
-    """
-    Checks if the given DefNode is a class method
+    """Check if the given node is a class method.
 
     Args:
-        node: A DefNode
+        node: The node to check.
 
     Returns:
-        `True` if the DefNode is indeed a Class Method. False otherwise.
+        bool: True if the node is a class method, False otherwise.
     """
     try:
         is_method = True if node.parent.type == "class" else False
@@ -41,25 +45,24 @@ def check_def_node_is_class_method(node) -> bool:
 
 def write_updated_source_to_file(source: RedBaron, filename: str):
     """
-    Runs RedBaron updated source code to file.
+    Writes the updated source code to a file.
 
     Args:
-        source: A RedBaron object representing the updated source code
-        filename: The filename where updated code will be written.
+        source (RedBaron): The updated source code represented as a RedBaron object.
+        filename (str): The name of the file to write the source code to.
     """
     with open(filename, "w", encoding="utf-8") as file:
         file.write(source.dumps())
 
 
 def check_is_private_method(node: Node) -> bool:
-    """
-    Check if current node is a private method in a class.
+    """Checks if a given node is a private method.
 
     Args:
-        node: A RedBaron node
+        node (Node): The node to check.
 
     Returns:
-        `True` if the method is private, `False` otherwise
+        bool: True if the node is a private method, False otherwise.
     """
     return all(
         [
@@ -67,3 +70,26 @@ def check_is_private_method(node: Node) -> bool:
             node.name.endswith("__"),
         ]
     )
+
+
+def match_between_characters(string: str, start_char: str, end_char: str):
+    """Extracts the substring between two specified characters in a given string.
+
+    Args:
+        string (str): The input string from which the substring will be extracted.
+        start_char (str): The starting character of the substring.
+        end_char (str): The ending character of the substring.
+
+    Returns:
+        str or None: The substring between the start_char and end_char if found, otherwise None.
+
+    Example:
+        match_between_characters("Hello [world]!", "[", "]")
+        'world'
+    """
+    pattern = re.escape(start_char) + "(.*?)" + re.escape(end_char)
+    match = re.search(pattern, string, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    else:
+        return None

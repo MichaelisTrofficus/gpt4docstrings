@@ -16,42 +16,74 @@ from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
 
 
 class GPT4Docstrings:
+    """A class for generating docstrings for Python files using GPT-4 model.
+
+    Args:
+        paths (Union[str, List[str]]): The paths to the Python files or directories to generate docstrings for.
+        excluded (Optional): A list of file patterns to exclude from docstring generation. Defaults to None.
+        model (str): The GPT model to use for generating docstrings. Defaults to "gpt-3.5-turbo".
+        docstring_style (str): The style of docstrings to generate. Must be one of ["google", "numpy",
+        "reStructuredText", "epytext"]. Defaults to "google".
+        api_key (str): The API key for accessing the GPT model. Defaults to None.
+        verbose (int): The verbosity level. Set to 0 for no output, 1 for basic output, and 2 for detailed output.
+        Defaults to 0.
+
+    Attributes:
+        paths (Union[str, List[str]]): The paths to the Python files or directories to generate docstrings for.
+        excluded (Optional): A list of file patterns to exclude from docstring generation.
+        common_base (pathlib.Path): The common base path of the input files or directories.
+        docstring_generator (ChatGPTDocstringGenerator): The docstring generator object.
+        verbose (int): The verbosity level.
+        documented_nodes (List[List[str]]): A list of documented functions and classes.
+
+    Methods:
+        print_pretty_documentation_table: Prints a pretty table of the documented functions and classes.
+        _filter_files: Filters the input files based on the excluded patterns.
+        get_filenames_from_paths: Retrieves the filenames from the input paths.
+        _generate_file_docstrings: Generates docstrings for a single file.
+        _generate_docstrings: Generates docstrings for multiple files.
+        generate_docstrings: Generates docstrings for the input files or directories.
+    """
+
     def __init__(
         self,
         paths: Union[str, List[str]],
         excluded=None,
         model: str = "gpt-3.5-turbo",
+        docstring_style: str = "google",
         api_key: str = None,
         verbose: int = 0,
     ):
         self.paths = paths
         self.excluded = excluded or ()
         self.common_base = pathlib.Path("/")
+
+        if docstring_style not in ["google", "numpy", "reStructuredText", "epytext"]:
+            raise ValueError(
+                "Docstring Style must be one of the following: "
+                '["google", "numpy", "reStructuredText", "epytext"]'
+            )
         self.docstring_generator = ChatGPTDocstringGenerator(
-            api_key=api_key, model=model
+            api_key=api_key, model=model, docstring_style=docstring_style
         )
+
         self.verbose = verbose
         self.documented_nodes = []
 
     def print_pretty_documentation_table(self):
-        """
-        Prints a pretty table to terminal when verbose is greater than zero. The table contains
-        one row per each node (function or class) examined by `gpt4docstrings`. One of the columns
-        refers to the node name and the other one shows if the node has been documented.
-        """
+        """Prints a pretty table of the documented functions and classes."""
         headers = ["Filename", "Documented Functions / Classes"]
         table = [x for x in self.documented_nodes]
         print(Fore.GREEN + tabulate(table, headers, tablefmt="outline"))
 
     def _filter_files(self, files: List[str]):
-        """
-        Filter files that are explicitly excluded
+        """Filters the input files based on the excluded patterns.
 
         Args:
-            files: A list of files to be filtered
+            files (List[str]): The list of file paths to filter.
 
         Yields:
-            Files which are not filtered
+            str: The filtered file paths.
         """
         for f in files:
             if not f.endswith(".py"):
@@ -67,11 +99,10 @@ class GPT4Docstrings:
             yield f
 
     def get_filenames_from_paths(self) -> List[str]:
-        """
-        Find all python files inside `paths` provided by the user
+        """Retrieves the filenames from the input paths.
 
         Returns:
-            A list of file names
+            List[str]: The list of filenames.
         """
         filenames = []
 
@@ -96,14 +127,13 @@ class GPT4Docstrings:
         return filenames
 
     def _generate_file_docstrings(self, filename: str):
-        """
-        Generates docstrings for a file.
+        """Generates docstrings for a single file.
 
         Args:
-            filename: The filename to be potentially documented
+            filename (str): The path of the file to generate docstrings for.
         """
         source = RedBaron(open(filename, encoding="utf-8").read())
-        click.echo(click.style(f"* Documenting file {filename} ... \n", fg="green"))
+        click.echo(click.style(f"Documenting file {filename} ... ", fg="green"))
 
         for node in source.find_all("def"):
             if not utils.check_def_node_is_class_method(node):
@@ -134,25 +164,20 @@ class GPT4Docstrings:
                 self.documented_nodes.append([filename, node.name])
 
         utils.write_updated_source_to_file(source, filename)
-        os.system(f"docformatter --in-place {filename}")
-
-        if self.verbose > 0:
-            self.print_pretty_documentation_table()
 
     def _generate_docstrings(self, filenames: List[str]):
-        """
-        Traverses the filenames and generate docstrings for undocumented classes / functions
-        inside each file.
+        """Generates docstrings for multiple files.
 
         Args:
-            filenames: A list of files to be potentially documented.
+            filenames (List[str]): The list of file paths to generate docstrings for.
         """
         for filename in filenames:
             self._generate_file_docstrings(filename)
 
     def generate_docstrings(self):
-        """Generates docstrings for undocumented classes / functions"""
+        """Generates docstrings for the input files or directories."""
         filenames = self.get_filenames_from_paths()
-
         click.echo(click.style(title, fg="green"))
         self._generate_docstrings(filenames)
+        if self.verbose > 0:
+            self.print_pretty_documentation_table()

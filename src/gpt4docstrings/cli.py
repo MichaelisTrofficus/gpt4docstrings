@@ -13,6 +13,13 @@ import gpt4docstrings
     help="The model to be used by `gpt4docstrings`. By default, `gpt-3.5-turbo`.",
 )
 @click.option(
+    "-s",
+    "--style",
+    type=click.STRING,
+    default="google",
+    help="Docstring style, which must be one of 'google', 'reStructuredText', 'epytext', 'numpy'",
+)
+@click.option(
     "-k",
     "--api_key",
     type=click.STRING,
@@ -63,6 +70,7 @@ def main(paths, **kwargs):
         paths=paths,
         excluded=kwargs["exclude"],
         model=kwargs["model"],
+        docstring_style=kwargs["style"],
         api_key=kwargs["api_key"],
         verbose=kwargs["verbose"],
     )
