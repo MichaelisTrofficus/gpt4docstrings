@@ -17,8 +17,8 @@ def get_common_base(files: List[str]) -> str:
         str: The common base directory path.
 
     Example:
-        >>> files = ['/path/to/file1.txt', '/path/to/file2.txt', '/path/to/file3.txt']
-        >>> get_common_base(files)
+        files = ['/path/to/file1.txt', '/path/to/file2.txt', '/path/to/file3.txt']
+        get_common_base(files)
         '/path/to'
     """
     common_base = pathlib.Path(os.path.commonprefix(files))
@@ -84,7 +84,7 @@ def match_between_characters(string: str, start_char: str, end_char: str):
         str or None: The substring between the start_char and end_char if found, otherwise None.
 
     Example:
-        >>> match_between_characters("Hello [world]!", "[", "]")
+        match_between_characters("Hello [world]!", "[", "]")
         'world'
     """
     pattern = re.escape(start_char) + "(.*?)" + re.escape(end_char)
