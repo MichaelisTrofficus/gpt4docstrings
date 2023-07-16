@@ -72,6 +72,6 @@ This project was generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter]
 
 <!-- github-only -->
 
-[license]: https://github.com/MichaelisTrofficus/gpt4docstrings/blob/main/LICENSE
-[contributor guide]: https://github.com/MichaelisTrofficus/gpt4docstrings/blob/main/CONTRIBUTING.md
-[command-line reference]: https://gpt4docstrings.readthedocs.io/en/latest/usage.html
+[license]: https://gpt4docstrings.readthedocs.io/en/latest/license.html
+[contributor guide]: https://gpt4docstrings.readthedocs.io/en/latest/contributing.html#
+[command-line reference]: https://gpt4docstrings.readthedocs.io/en/latest/use_as_cli.html
