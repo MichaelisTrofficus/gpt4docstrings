@@ -1,4 +1,10 @@
-# gpt4docstrings
+<p align="center">
+    <img alt="gpt4docstrings logo" src="images/logo.png" width=300 />
+    <h1 align="center">gpt4docstrings</h1>
+    <h3 align="center">Generating Python docstrings with OpenAI ChatGPT!!</h3>
+</p>
+
+---
 
 [![PyPI](https://img.shields.io/pypi/v/gpt4docstrings.svg)][pypi_]
 [![Status](https://img.shields.io/pypi/status/gpt4docstrings.svg)][status]
