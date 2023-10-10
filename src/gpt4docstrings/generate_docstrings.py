@@ -70,13 +70,13 @@ class GPT4Docstrings:
         self.verbose = verbose
         self.documented_nodes = []
 
-    def print_pretty_documentation_table(self):
+    def __print_pretty_documentation_table(self):
         """Prints a pretty table of the documented functions and classes."""
         headers = ["Filename", "Documented Functions / Classes"]
         table = [x for x in self.documented_nodes]
         print(Fore.GREEN + tabulate(table, headers, tablefmt="outline"))
 
-    def _filter_files(self, files: List[str]):
+    def __filter_files(self, files: List[str]):
         """Filters the input files based on the excluded patterns.
 
         Args:
@@ -118,7 +118,7 @@ class GPT4Docstrings:
 
             for root, _, fs in os.walk(path):
                 full_paths = [os.path.join(root, f) for f in fs]
-                filenames.extend(self._filter_files(full_paths))
+                filenames.extend(self.__filter_files(full_paths))
 
         if not filenames:
             return sys.exit(1)
@@ -126,7 +126,7 @@ class GPT4Docstrings:
         self.common_base = utils.get_common_base(filenames)
         return filenames
 
-    def _generate_file_docstrings(self, filename: str):
+    def generate_file_docstrings(self, filename: str):
         """Generates docstrings for a single file.
 
         Args:
@@ -165,19 +165,13 @@ class GPT4Docstrings:
 
         utils.write_updated_source_to_file(source, filename)
 
-    def _generate_docstrings(self, filenames: List[str]):
-        """Generates docstrings for multiple files.
-
-        Args:
-            filenames (List[str]): The list of file paths to generate docstrings for.
-        """
-        for filename in filenames:
-            self._generate_file_docstrings(filename)
-
     def generate_docstrings(self):
         """Generates docstrings for the input files or directories."""
         filenames = self.get_filenames_from_paths()
         click.echo(click.style(title, fg="green"))
-        self._generate_docstrings(filenames)
+
+        for filename in filenames:
+            self.generate_file_docstrings(filename)
+
         if self.verbose > 0:
-            self.print_pretty_documentation_table()
+            self.__print_pretty_documentation_table()
