@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import sys
@@ -13,6 +14,8 @@ from tabulate import tabulate
 from gpt4docstrings import utils
 from gpt4docstrings.ascii_title import title
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
+from gpt4docstrings.exceptions import ASTError
+from gpt4docstrings.exceptions import DocstringParsingError
 
 
 class GPT4Docstrings:
@@ -126,6 +129,7 @@ class GPT4Docstrings:
         self.common_base = utils.get_common_base(filenames)
         return filenames
 
+    # flake8: noqa: C901
     def generate_file_docstrings(self, filename: str):
         """Generates docstrings for a single file.
 
@@ -136,33 +140,58 @@ class GPT4Docstrings:
         click.echo(click.style(f"Documenting file {filename} ... ", fg="green"))
 
         for node in source.find_all("def"):
-            if not utils.check_def_node_is_class_method(node):
+            if not utils.check_def_node_is_class_method(
+                node
+            ) and not utils.check_def_node_is_nested(node):
                 if not node.value[0].type == "string":
-                    fn_docstring = self.docstring_generator.generate_function_docstring(
-                        node.dumps()
-                    )
-                    node.value.insert(0, fn_docstring["docstring"])
-                    self.documented_nodes.append([filename, node.name])
+                    try:
+                        fn_docstring = (
+                            self.docstring_generator.generate_function_docstring(
+                                node.dumps()
+                            )
+                        )
+                        node.value.insert(0, fn_docstring["docstring"])
+                        self.documented_nodes.append([filename, node.name])
+                    except DocstringParsingError:
+                        logging.warning(
+                            f"Skipping {node.name} from {filename} due to errors when parsing"
+                        )
+                    except ASTError:
+                        logging.warning(
+                            f"Skipping {node.name} from {filename} due to errors when accessing AST node"
+                        )
 
         for node in source.find_all("class"):
             if not node.value[0].type == "string":
-                class_docstring = self.docstring_generator.generate_class_docstring(
-                    node.dumps()
-                )
-                node.value.insert(
-                    0,
-                    class_docstring["docstring"],
-                )
+                try:
+                    class_docstring = self.docstring_generator.generate_class_docstring(
+                        node.dumps()
+                    )
+                    node.value.insert(
+                        0,
+                        class_docstring["docstring"],
+                    )
 
-                for method_node in node.value:
-                    if (
-                        method_node.type == "def"
-                        and not utils.check_is_private_method(method_node)
-                        and not method_node.value[0].type == "string"
-                    ):
-                        method_node.value.insert(0, class_docstring[method_node.name])
+                    for method_node in node.value:
+                        if (
+                            method_node.type == "def"
+                            and not utils.check_is_private_method(method_node)
+                            and not method_node.value[0].type == "string"
+                            and not utils.check_def_node_is_nested(method_node)
+                        ):
+                            method_node.value.insert(
+                                0, class_docstring[method_node.name]
+                            )
 
-                self.documented_nodes.append([filename, node.name])
+                    self.documented_nodes.append([filename, node.name])
+                except DocstringParsingError:
+                    logging.warning(
+                        f"Skipping {node.name} from {filename} due to errors when parsing"
+                    )
+                except ASTError:
+                    logging.warning(
+                        f"Skipping {node.name} from {filename} due to errors when accessing AST node"
+                    )
 
         utils.write_updated_source_to_file(source, filename)
 

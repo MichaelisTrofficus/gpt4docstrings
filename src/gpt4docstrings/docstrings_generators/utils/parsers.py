@@ -2,11 +2,7 @@ import re
 
 from langchain.schema import BaseOutputParser
 
-
-class DocstringParsingError(Exception):
-    """Custom exception for docstring parsing errors."""
-
-    pass
+from gpt4docstrings.exceptions import DocstringParsingError
 
 
 class DocstringParser(BaseOutputParser):
