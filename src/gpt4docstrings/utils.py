@@ -1,6 +1,7 @@
 import os
 import pathlib
 import re
+import textwrap
 from typing import List
 
 from redbaron import Node
@@ -93,3 +94,7 @@ def match_between_characters(string: str, start_char: str, end_char: str):
         return match.group(1).strip()
     else:
         return None
+
+
+def add_indentation_to_docstring(text: str, indentation_level: int):
+    return textwrap.indent(text, " " * indentation_level)

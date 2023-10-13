@@ -4,9 +4,14 @@ import textwrap
 import time
 
 import openai
+from langchain.chat_models import ChatOpenAI
+from langchain.prompts import PromptTemplate
+from langchain.schema.prompt import PromptValue
 from redbaron import RedBaron
 
-from gpt4docstrings.utils import match_between_characters
+from gpt4docstrings.docstrings_generators.utils.parsers import FunctionDocstringParser
+from gpt4docstrings.docstrings_generators.utils.prompts import CLASS_PROMPTS
+from gpt4docstrings.docstrings_generators.utils.prompts import FUNCTION_PROMPTS
 
 
 class ChatGPTDocstringGenerator:
@@ -15,44 +20,38 @@ class ChatGPTDocstringGenerator:
     def __init__(
         self,
         api_key: str,
-        model: str,
+        model_name: str,
         docstring_style: str,
     ):
         self.api_key = api_key if api_key else os.getenv("OPENAI_API_KEY")
-        self.model = model
-        self.docstring_style = docstring_style
-
         if not self.api_key:
             raise ValueError("Please, provide the OpenAI API Key")
 
         openai.api_key = self.api_key
 
-    def _get_completion(self, prompt: str, system_role: str) -> str:
+        self.model_name = model_name
+        self.docstring_style = docstring_style
+
+        self.model = ChatOpenAI(model_name=model_name, temperature=1.0)
+        self.function_prompt_template = FUNCTION_PROMPTS.get(docstring_style)
+        self.class_prompt_template = CLASS_PROMPTS.get(docstring_style)
+
+    def _get_completion(self, prompt: PromptValue) -> str:
         """
         Generates a completion using the ChatGPT model.
 
         Args:
-            prompt (str): The prompt for generating the completion.
-            system_role (str): The role of the system in the conversation.
+            prompt (PromptValue): The prompt for generating the completion.
 
         Returns:
             str: The generated completion.
         """
         max_retries = 5
         retries = 0
-        messages = [
-            {"role": "system", "content": system_role},
-            {"role": "user", "content": prompt},
-        ]
 
         while retries < max_retries:
             try:
-                response = openai.ChatCompletion.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=0,
-                )
-                return response.choices[0].message["content"]
+                return self.model.predict(prompt.to_string()).strip()
             except openai.error.APIError:
                 time.sleep(5)
                 retries += 1
@@ -72,35 +71,19 @@ class ChatGPTDocstringGenerator:
         """
         source = source.strip()
         stripped_source = textwrap.dedent(source)
-
-        system_role = "When you generate Python docstrings only return a string that I can add to my code."
-        prompt = (
-            f"Write a Python docstring [in {self.docstring_style}-style format] for the piece of code "
-            f"delimited by triple backticks.\n\n"
-            f"1. Output with no introduction, no explanation, only the docstring. \n"
-            f"2. Don't make mistakes and check if you did.\n"
-            f"3. Return the generated docstring as a string, so I can copy it and add it as a docstring to my code.\n"
-            f"4. Don't return Python code, only the generated docstring. \n\n"
-            f"5. Check if the generated docstring follows [{self.docstring_style}-style format]. If not, translate "
-            f"it into [{self.docstring_style}-style format].\n\n"
-            f"```\n"
-            f"{stripped_source}\n"
-            f"```\n"
+        prompt = PromptTemplate(
+            template=self.function_prompt_template,
+            input_variables=["code"],
         )
-        generated_docstring = self._get_completion(prompt, system_role)
-        if generated_docstring.startswith("```python"):
-            generated_docstring = match_between_characters(
-                generated_docstring, start_char="```python", end_char="```"
-            )
-
-        try:
-            node = RedBaron(generated_docstring)
-            if node[0].type == "def":
-                generated_docstring = node[0].value[0].value.strip()
-        except Exception as e:
-            print(e)
-
-        return {"docstring": generated_docstring}
+        _input = prompt.format_prompt(code=stripped_source)
+        fn_src = FunctionDocstringParser().parse(self._get_completion(_input))
+        fn_node = RedBaron(fn_src)[0]
+        return {
+            "docstring": {
+                "text": '"""' + textwrap.dedent(fn_node[0].to_python()) + '"""',
+                "indentation_level": len(fn_node[0].indentation),
+            }
+        }
 
     def generate_class_docstring(self, source: str) -> dict:
         """

@@ -64,7 +64,7 @@ class GPT4Docstrings:
                 '["google", "numpy", "reStructuredText", "epytext"]'
             )
         self.docstring_generator = ChatGPTDocstringGenerator(
-            api_key=api_key, model=model, docstring_style=docstring_style
+            api_key=api_key, model_name=model, docstring_style=docstring_style
         )
 
         self.verbose = verbose
@@ -138,12 +138,14 @@ class GPT4Docstrings:
         for node in source.find_all("def"):
             if not utils.check_def_node_is_class_method(node):
                 if not node.value[0].type == "string":
-                    docstring_dict = (
+                    docstring_info = (
                         self.docstring_generator.generate_function_docstring(
                             node.dumps()
-                        )
+                        )["docstring"]
                     )
-                    node.value.insert(0, docstring_dict["docstring"])
+                    node.value.insert(
+                        0, utils.add_indentation_to_docstring(**docstring_info)
+                    )
                     self.documented_nodes.append([filename, node.name])
 
         for node in source.find_all("class"):
