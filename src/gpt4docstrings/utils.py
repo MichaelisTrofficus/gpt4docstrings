@@ -28,6 +28,22 @@ def get_common_base(files: List[str]) -> str:
     return str(common_base)
 
 
+def check_def_node_is_nested(node) -> bool:
+    """Check if the given node is a nested function.
+
+    Args:
+        node: The node to check
+
+    Returns:
+        bool: True if the node is a nested function, False otherwise.
+    """
+    try:
+        is_nested = True if node.parent.type == "def" else False
+    except AttributeError:
+        is_nested = False
+    return is_nested
+
+
 def check_def_node_is_class_method(node) -> bool:
     """Check if the given node is a class method.
 
