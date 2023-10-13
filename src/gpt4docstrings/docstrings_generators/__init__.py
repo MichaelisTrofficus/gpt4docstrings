@@ -1,1 +1,1 @@
-from .openai_chatgpt import ChatGPTDocstringGenerator  # noqa F401
+from .chatgpt_generator import ChatGPTDocstringGenerator  # noqa F401
