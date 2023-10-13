@@ -1,15 +1,13 @@
 import os
-import re
 import textwrap
-import time
 
 import openai
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from langchain.schema.prompt import PromptValue
 from redbaron import RedBaron
 
-from gpt4docstrings.docstrings_generators.utils.parsers import FunctionDocstringParser
+from gpt4docstrings.docstrings_generators.utils.decorators import retry
+from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParser
 from gpt4docstrings.docstrings_generators.utils.prompts import CLASS_PROMPTS
 from gpt4docstrings.docstrings_generators.utils.prompts import FUNCTION_PROMPTS
 
@@ -36,28 +34,18 @@ class ChatGPTDocstringGenerator:
         self.function_prompt_template = FUNCTION_PROMPTS.get(docstring_style)
         self.class_prompt_template = CLASS_PROMPTS.get(docstring_style)
 
-    def _get_completion(self, prompt: PromptValue) -> str:
+    @retry(max_retries=5, delay=5)
+    def _get_completion(self, prompt: str) -> str:
         """
         Generates a completion using the ChatGPT model.
 
         Args:
-            prompt (PromptValue): The prompt for generating the completion.
+            prompt (str): The prompt for generating the completion.
 
         Returns:
             str: The generated completion.
         """
-        max_retries = 5
-        retries = 0
-
-        while retries < max_retries:
-            try:
-                return self.model.predict(prompt.to_string()).strip()
-            except openai.error.APIError:
-                time.sleep(5)
-                retries += 1
-            except openai.error.ServiceUnavailableError:
-                time.sleep(5)
-                retries += 1
+        return self.model.predict(prompt).strip()
 
     def generate_function_docstring(self, source: str) -> dict:
         """
@@ -76,7 +64,7 @@ class ChatGPTDocstringGenerator:
             input_variables=["code"],
         )
         _input = prompt.format_prompt(code=stripped_source)
-        fn_src = FunctionDocstringParser().parse(self._get_completion(_input))
+        fn_src = DocstringParser().parse(self._get_completion(_input.to_string()))
         fn_node = RedBaron(fn_src)[0]
         return {
             "docstring": {
@@ -97,38 +85,26 @@ class ChatGPTDocstringGenerator:
         """
         source = source.strip()
         stripped_source = textwrap.dedent(source)
-
-        system_role = (
-            "When you are asked to generate Python docstrings for a class "
-            "only return the class with the generated docstrings."
+        prompt = PromptTemplate(
+            template=self.class_prompt_template,
+            input_variables=["code"],
         )
-        prompt = (
-            f"Write Python docstrings [in {self.docstring_style} style] for the Python class below. \n\n"
-            f"1. Output with no introduction, no explanation, only code. \n"
-            f"2. Don't make mistakes and check if you did.\n"
-            f"3. Only return Python3 code and the docstrings, and nothing else. \n"
-            f"4. Check if the generated docstrings follow [{self.docstring_style} style]. If not, translate them into "
-            f"[{self.docstring_style} style].\n\n"
-            f"{stripped_source}\n"
-            f"Code: "
-        )
-
-        docstrings = {}
-        generated_docstring = self._get_completion(prompt, system_role)
-
-        if generated_docstring.strip().startswith("```python"):
-            match = re.search(
-                r"```python(.+?)```", generated_docstring, flags=re.DOTALL
-            )
-            generated_docstring = match.group(1).strip()
-
-        class_source = RedBaron(generated_docstring)
-        class_node = class_source[0]
+        _input = prompt.format_prompt(code=stripped_source)
+        class_src = DocstringParser().parse(self._get_completion(_input.to_string()))
+        class_node = RedBaron(class_src)[0]
         method_nodes = [f for f in class_node.find_all("def")]
 
+        docstrings = {}
         for method_node in method_nodes:
-            docstrings[method_node.name] = method_node.value[0]
+            docstrings[method_node.name] = {
+                "text": '"""' + textwrap.dedent(method_node[0].to_python()) + '"""',
+                "indentation_level": len(method_node[0].indentation),
+            }
 
         docstrings["docstring"] = class_node.value[0]
+        docstrings["docstring"] = {
+            "text": '"""' + textwrap.dedent(class_node[0].to_python()) + '"""',
+            "indentation_level": len(class_node[0].indentation),
+        }
 
         return docstrings

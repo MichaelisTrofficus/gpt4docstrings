@@ -44,5 +44,5 @@ def test_generate_docstrings(
             ):
                 assert (
                     method_node.value[0].value
-                    == '"""\n    This is a generated docstring\n    """'
+                    == '"""\n        This is a generated docstring\n        """'
                 )

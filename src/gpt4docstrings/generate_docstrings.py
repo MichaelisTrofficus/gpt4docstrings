@@ -138,22 +138,23 @@ class GPT4Docstrings:
         for node in source.find_all("def"):
             if not utils.check_def_node_is_class_method(node):
                 if not node.value[0].type == "string":
-                    docstring_info = (
-                        self.docstring_generator.generate_function_docstring(
-                            node.dumps()
-                        )["docstring"]
-                    )
+                    fn_docstring = self.docstring_generator.generate_function_docstring(
+                        node.dumps()
+                    )["docstring"]
                     node.value.insert(
-                        0, utils.add_indentation_to_docstring(**docstring_info)
+                        0, utils.add_indentation_to_docstring(**fn_docstring)
                     )
                     self.documented_nodes.append([filename, node.name])
 
         for node in source.find_all("class"):
             if not node.value[0].type == "string":
-                docstring_dict = self.docstring_generator.generate_class_docstring(
+                class_docstring = self.docstring_generator.generate_class_docstring(
                     node.dumps()
                 )
-                node.value.insert(0, docstring_dict["docstring"])
+                node.value.insert(
+                    0,
+                    utils.add_indentation_to_docstring(**class_docstring["docstring"]),
+                )
 
                 for method_node in node.value:
                     if (
@@ -161,7 +162,12 @@ class GPT4Docstrings:
                         and not utils.check_is_private_method(method_node)
                         and not method_node.value[0].type == "string"
                     ):
-                        method_node.value.insert(0, docstring_dict[method_node.name])
+                        method_node.value.insert(
+                            0,
+                            utils.add_indentation_to_docstring(
+                                **class_docstring[method_node.name]
+                            ),
+                        )
 
                 self.documented_nodes.append([filename, node.name])
 

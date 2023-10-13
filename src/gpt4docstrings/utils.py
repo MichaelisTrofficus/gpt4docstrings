@@ -97,4 +97,14 @@ def match_between_characters(string: str, start_char: str, end_char: str):
 
 
 def add_indentation_to_docstring(text: str, indentation_level: int):
+    """
+    Add a specified level of indentation to a given multiline string.
+
+    Args:
+        text (str): The multiline string to which indentation will be added.
+        indentation_level (int): The number of spaces to use as indentation.
+
+    Returns:
+        str: The multiline string with the specified indentation level added.
+    """
     return textwrap.indent(text, " " * indentation_level)
