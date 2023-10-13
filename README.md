@@ -49,7 +49,55 @@ $ pip install gpt4docstrings
 
 ## Usage
 
-Please see the [Command-line Reference] for details.
+##### Command Line Interface
+
+The first option when using `gpt4docstrings` is to use it as a Command Line Interface (CLI).
+
+The following is an example command that generates docstrings for all the non-documented
+classes / functions under `src/` directory.
+
+```bash
+gpt4docstrings src/
+```
+
+Another quite common situation is that we want to exclude the `tests/` folder, for example,
+from the generation of docstrings. Doing this is very simple.
+
+```bash
+gpt4docstrings --exclude tests/ .
+```
+
+Lastly, you could also run `gpt4docstrings` in a specific Python file.
+
+```bash
+gpt4docstrings ./src/example.py
+```
+
+Remember that, if you don't have your OpenAI API Key defined as an Environment Variable (OPENAI_API_KEY),
+`gpt4docstrings` can accept the API Key as an option.
+
+```bash
+gpt4docstrings --exclude tests/ --api_key sk-xxxxxxxxxxxx .
+```
+
+##### pre-commit hook
+
+Another cool use of `gpt4docstrings` is as a `precommit` hook.
+All you have to do is add it to your configuration file and you’re done!
+
+```yaml
+repos:
+  - repo: https://github.com/MichaelisTrofficus/gpt4docstrings
+    rev: v0.1.0
+    hooks:
+      - id: gpt4docstrings
+        name: gpt4docstrings
+        language: python
+        entry: gpt4docstrings
+        types: [python]
+```
+
+Please see the [Command-line Reference] for more details!!
 
 ## Contributing
 
