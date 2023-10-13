@@ -2,16 +2,18 @@ FUNCTION_PROMPTS = {
     "google": '''
 If I give you this Python function:
 
+```python
 def calculate_average(numbers):
     total = sum(numbers)
     count = len(numbers)
     if count == 0:
         raise ZeroDivisionError("Cannot calculate the average of an empty list.")
     return total / count
+```
 
 The documented function using a Google docstring will be:
 
-```
+```python
 def calculate_average(numbers):
     """
     Calculate the average of a list of numbers.
@@ -34,23 +36,27 @@ def calculate_average(numbers):
 
 If I give you this Python function:
 
+```python
 {code}
+```
 
 The documented function using a Google docstring will be:
 ''',
     "numpy": '''
 If I give you this Python function:
 
+```python
 def calculate_average(numbers):
     total = sum(numbers)
     count = len(numbers)
     if count == 0:
         raise ZeroDivisionError("Cannot calculate the average of an empty list.")
     return total / count
+```
 
 The documented function using a NumPy docstring will be:
 
-```
+```python
 def calculate_average(numbers):
     """
     Calculate the average of a list of numbers.
@@ -79,23 +85,27 @@ def calculate_average(numbers):
 
 If I give you this Python function:
 
+```python
 {code}
+```
 
 The documented function using a NumPy docstring will be:
 ''',
     "reStructuredText": '''
 If I give you this Python function:
 
+```python
 def calculate_average(numbers):
     total = sum(numbers)
     count = len(numbers)
     if count == 0:
         raise ZeroDivisionError("Cannot calculate the average of an empty list.")
     return total / count
+```
 
 The documented function using a reStructuredText docstring will be:
 
-```
+```python
 def calculate_average(numbers):
     """
     Calculate the average of a list of numbers.
@@ -117,23 +127,27 @@ def calculate_average(numbers):
 
 If I give you this Python function:
 
+```python
 {code}
+```
 
 The documented function using a reStructuredText docstring will be:
 ''',
     "epytext": '''
 If I give you this Python function:
 
+```python
 def calculate_average(numbers):
     total = sum(numbers)
     count = len(numbers)
     if count == 0:
         raise ZeroDivisionError("Cannot calculate the average of an empty list.")
     return total / count
+```
 
 The documented function using a Epytext docstring will be:
 
-```
+```python
 def calculate_average(numbers):
     """
     Calculate the average of a list of numbers.
@@ -155,7 +169,9 @@ def calculate_average(numbers):
 
 If I give you this Python function:
 
+```python
 {code}
+```
 
 The documented function using a Epytext docstring will be:
 ''',
@@ -165,6 +181,7 @@ CLASS_PROMPTS = {
     "google": '''
 If I give you this Python class:
 
+```python
 class Student:
     def __init__(self, name, student_id):
         self.name = name
@@ -175,10 +192,11 @@ class Student:
 
     def take_exam(self, subject):
         print(self.name + " is taking an exam in " + subject + ".")
+```
 
 The documented class using Google docstrings will be:
 
-```
+```python
 class Student:
     """
     A class representing a student.
@@ -220,13 +238,16 @@ class Student:
 
 If I give you this Python class:
 
+```python
 {code}
+```
 
 The documented class using Google docstrings will be:
 ''',
     "numpy": '''
 If I give you this Python class:
 
+```python
 class Student:
     def __init__(self, name, student_id):
         self.name = name
@@ -237,10 +258,11 @@ class Student:
 
     def take_exam(self, subject):
         print(self.name + " is taking an exam in " + subject + ".")
+```
 
 The documented class using NumPy docstrings will be:
 
-```
+```python
 class Student:
     """
     A class representing a student.
@@ -292,13 +314,16 @@ class Student:
 
 If I give you this Python class:
 
+```python
 {code}
+```
 
 The documented class using NumPy docstrings will be:
 ''',
     "reStructuredText": '''
 If I give you this Python class:
 
+```python
 class Student:
     def __init__(self, name, student_id):
         self.name = name
@@ -309,10 +334,11 @@ class Student:
 
     def take_exam(self, subject):
         print(self.name + " is taking an exam in " + subject + ".")
+```
 
 The documented class using reStructuredText docstrings will be:
 
-```
+```python
 class Student:
     """
     A class representing a student.
@@ -356,13 +382,16 @@ class Student:
 
 If I give you this Python class:
 
+```python
 {code}
+```
 
 The documented class using reStructuredText docstrings will be:
 ''',
     "epytext": '''
 If I give you this Python class:
 
+```python
 class Student:
     def __init__(self, name, student_id):
         self.name = name
@@ -373,10 +402,11 @@ class Student:
 
     def take_exam(self, subject):
         print(self.name + " is taking an exam in " + subject + ".")
+```
 
 The documented class using Epytext docstrings will be:
 
-```
+```python
 class Student:
     """
     A class representing a student.
@@ -420,7 +450,9 @@ class Student:
 
 If I give you this Python class:
 
+```python
 {code}
+```
 
 The documented class using Epytext docstrings will be:
 ''',

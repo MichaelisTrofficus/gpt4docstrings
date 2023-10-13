@@ -72,7 +72,7 @@ class ChatGPTDocstringGenerator:
         fn_src = DocstringParser().parse(self._get_completion(_input.to_string()))
 
         try:
-            fn_node = RedBaron(fn_src)[0]
+            fn_node = RedBaron(fn_src).find_all("def")[0]
             return {
                 "docstring": utils.add_indentation_to_docstring(
                     '"""' + textwrap.dedent(fn_node[0].to_python()) + '"""',
@@ -106,8 +106,9 @@ class ChatGPTDocstringGenerator:
         _input = prompt.format_prompt(code=stripped_source)
         class_src = DocstringParser().parse(self._get_completion(_input.to_string()))
 
+        # TODO: Add here access to class node explicitly.
         try:
-            class_node = RedBaron(class_src)[0]
+            class_node = RedBaron(class_src).find_all("class")[0]
             method_nodes = [f for f in class_node.find_all("def")]
 
             docstrings = {}
