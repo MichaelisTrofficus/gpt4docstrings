@@ -6,14 +6,14 @@ from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParsingE
 
 def test_function_docstring():
     parser = DocstringParser()
-    text = "```This is a function docstring```"
+    text = "```python\nThis is a function docstring```"
     result = parser.parse(text)
     assert result == "This is a function docstring"
 
 
 def test_empty_function_docstring():
     parser = DocstringParser()
-    text = "``` ```"
+    text = "```python```"
     result = parser.parse(text)
     assert result == ""
 
@@ -28,7 +28,7 @@ def test_function_missing_backticks():
 def test_valid_class_docstring():
     parser = DocstringParser()
     text = (
-        '```class MyClass:\n """This is a class docstring"""\n def method1(self):\n   '
+        '```python\nclass MyClass:\n """This is a class docstring"""\n def method1(self):\n   '
         ' """Method 1 docstring"""\n  def method2(self):\n    """Method 2 docstring"""\n```'
     )
     result = parser.parse(text)
@@ -42,7 +42,7 @@ def test_valid_class_docstring():
 def test_empty_class_docstring():
     parser = DocstringParser()
     text = (
-        '```class MyClass:\n """ """\n  def method1(self):\n    """Method 1 docstring"""\n  '
+        '```python\nclass MyClass:\n """ """\n  def method1(self):\n    """Method 1 docstring"""\n  '
         'def method2(self):\n    """Method 2 docstring"""\n```'
     )
     result = parser.parse(text)
