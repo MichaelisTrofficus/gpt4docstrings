@@ -6,6 +6,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from redbaron import RedBaron
 
+from gpt4docstrings import utils
 from gpt4docstrings.docstrings_generators.utils.decorators import retry
 from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParser
 from gpt4docstrings.docstrings_generators.utils.prompts import CLASS_PROMPTS
@@ -66,11 +67,12 @@ class ChatGPTDocstringGenerator:
         _input = prompt.format_prompt(code=stripped_source)
         fn_src = DocstringParser().parse(self._get_completion(_input.to_string()))
         fn_node = RedBaron(fn_src)[0]
+
         return {
-            "docstring": {
-                "text": '"""' + textwrap.dedent(fn_node[0].to_python()) + '"""',
-                "indentation_level": len(fn_node[0].indentation),
-            }
+            "docstring": utils.add_indentation_to_docstring(
+                '"""' + textwrap.dedent(fn_node[0].to_python()) + '"""',
+                fn_node[0].indentation,
+            )
         }
 
     def generate_class_docstring(self, source: str) -> dict:
@@ -96,15 +98,15 @@ class ChatGPTDocstringGenerator:
 
         docstrings = {}
         for method_node in method_nodes:
-            docstrings[method_node.name] = {
-                "text": '"""' + textwrap.dedent(method_node[0].to_python()) + '"""',
-                "indentation_level": len(method_node[0].indentation),
-            }
+            docstrings[method_node.name] = utils.add_indentation_to_docstring(
+                '"""' + textwrap.dedent(method_node[0].to_python()) + '"""',
+                method_node[0].indentation,
+            )
 
         docstrings["docstring"] = class_node.value[0]
-        docstrings["docstring"] = {
-            "text": '"""' + textwrap.dedent(class_node[0].to_python()) + '"""',
-            "indentation_level": len(class_node[0].indentation),
-        }
+        docstrings["docstring"] = utils.add_indentation_to_docstring(
+            '"""' + textwrap.dedent(class_node[0].to_python()) + '"""',
+            class_node[0].indentation,
+        )
 
         return docstrings

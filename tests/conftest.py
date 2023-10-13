@@ -8,21 +8,14 @@ def pytest_configure():
 
 
 def generate_test_function_docstring(source: str):
-    base_docstring = "This is a generated docstring"
-    return {
-        "docstring": {"text": f'"""\n{base_docstring}\n"""', "indentation_level": 4}
-    }
+    return {"docstring": '"""\n    This is a generated docstring\n    """'}
 
 
 def generate_test_class_docstring(source: str):
-    base_docstring = "This is a generated docstring"
     return {
-        "docstring": {"text": f'"""\n{base_docstring}\n"""', "indentation_level": 4},
-        "add_word_to_attr1": {
-            "text": f'"""\n{base_docstring}\n"""',
-            "indentation_level": 8,
-        },
-        "pow_attr2": {"text": f'"""\n{base_docstring}\n"""', "indentation_level": 8},
+        "docstring": '"""\n    This is a generated docstring\n    """',
+        "add_word_to_attr1": '"""\n        This is a generated docstring\n        """',
+        "pow_attr2": '"""\n        This is a generated docstring\n        """',
     }
 
 

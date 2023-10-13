@@ -140,10 +140,8 @@ class GPT4Docstrings:
                 if not node.value[0].type == "string":
                     fn_docstring = self.docstring_generator.generate_function_docstring(
                         node.dumps()
-                    )["docstring"]
-                    node.value.insert(
-                        0, utils.add_indentation_to_docstring(**fn_docstring)
                     )
+                    node.value.insert(0, fn_docstring["docstring"])
                     self.documented_nodes.append([filename, node.name])
 
         for node in source.find_all("class"):
@@ -153,7 +151,7 @@ class GPT4Docstrings:
                 )
                 node.value.insert(
                     0,
-                    utils.add_indentation_to_docstring(**class_docstring["docstring"]),
+                    class_docstring["docstring"],
                 )
 
                 for method_node in node.value:
@@ -162,12 +160,7 @@ class GPT4Docstrings:
                         and not utils.check_is_private_method(method_node)
                         and not method_node.value[0].type == "string"
                     ):
-                        method_node.value.insert(
-                            0,
-                            utils.add_indentation_to_docstring(
-                                **class_docstring[method_node.name]
-                            ),
-                        )
+                        method_node.value.insert(0, class_docstring[method_node.name])
 
                 self.documented_nodes.append([filename, node.name])
 
