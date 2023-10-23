@@ -15,7 +15,6 @@ from gpt4docstrings import utils
 from gpt4docstrings.ascii_title import title
 from gpt4docstrings.config import GPT4DocstringsConfig
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
-from gpt4docstrings.visit import GPT4DocstringsNode
 from gpt4docstrings.visit import GPT4DocstringsVisitor
 
 
@@ -27,10 +26,12 @@ class GPT4Docstrings:
         excluded (Optional): A list of file patterns to exclude from docstring generation. Defaults to None.
         model (str): The GPT model to use for generating docstrings. Defaults to "gpt-3.5-turbo".
         docstring_style (str): The style of docstrings to generate. Must be one of ["google", "numpy",
-        "reStructuredText", "epytext"]. Defaults to "google".
+            "reStructuredText", "epytext"]. Defaults to "google".
         api_key (str): The API key for accessing the GPT model. Defaults to None.
         verbose (int): The verbosity level. Set to 0 for no output, 1 for basic output, and 2 for detailed output.
-        Defaults to 0.
+            Defaults to 0.
+        config (GPT4DocstringsConfig): Configuration for GPT4Docstrings
+
 
     Attributes:
         paths (Union[str, List[str]]): The paths to the Python files or directories to generate docstrings for.
@@ -57,6 +58,7 @@ class GPT4Docstrings:
         docstring_style: str = "google",
         api_key: str = None,
         verbose: int = 0,
+        config: GPT4DocstringsConfig = None,
     ):
         self.paths = paths
         self.excluded = excluded or ()
@@ -73,6 +75,7 @@ class GPT4Docstrings:
 
         self.verbose = verbose
         self.documented_nodes = []
+        self.config = config
 
     def __print_pretty_documentation_table(self):
         """Prints a pretty table of the documented functions and classes."""
@@ -152,7 +155,7 @@ class GPT4Docstrings:
         filtered_nodes = [n for n in filtered_nodes if n not in nested_cls]
         return filtered_nodes
 
-    async def generate_file_docstrings(self, filename: str) -> List[GPT4DocstringsNode]:
+    async def generate_file_docstrings(self, filename: str):
         """
         Generates docstrings for a single file.
 

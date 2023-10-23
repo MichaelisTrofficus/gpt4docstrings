@@ -3,6 +3,7 @@ import os
 import click
 
 import gpt4docstrings
+from gpt4docstrings.config import GPT4DocstringsConfig
 
 
 @click.option(
@@ -73,5 +74,6 @@ def main(paths, **kwargs):
         docstring_style=kwargs["style"],
         api_key=kwargs["api_key"],
         verbose=kwargs["verbose"],
+        config=GPT4DocstringsConfig(),
     )
     docstrings_generator.generate_docstrings()
