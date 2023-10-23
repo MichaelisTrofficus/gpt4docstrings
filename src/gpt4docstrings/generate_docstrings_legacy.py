@@ -1,5 +1,4 @@
-import ast
-import asyncio
+import logging
 import os
 import pathlib
 import sys
@@ -9,14 +8,14 @@ from typing import Union
 
 import click
 from colorama import Fore
+from redbaron import RedBaron
 from tabulate import tabulate
 
 from gpt4docstrings import utils
 from gpt4docstrings.ascii_title import title
-from gpt4docstrings.config import GPT4DocstringsConfig
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
-from gpt4docstrings.visit import GPT4DocstringsNode
-from gpt4docstrings.visit import GPT4DocstringsVisitor
+from gpt4docstrings.exceptions import ASTError
+from gpt4docstrings.exceptions import DocstringParsingError
 
 
 class GPT4Docstrings:
@@ -130,71 +129,79 @@ class GPT4Docstrings:
         self.common_base = utils.get_common_base(filenames)
         return filenames
 
-    @staticmethod
-    def _filter_nodes(nodes):
-        """Filters the parsed nodes to only consider classes and functions"""
-        return [
-            node
-            for node in nodes
-            if (
-                (node.node_type in ["ClassDef", "FunctionDef", "AsyncFunctionDef"])
-                and not node.covered
-            )
-        ]
-
-    @staticmethod
-    def _filter_inner_nested(nodes):
-        """Filters out children of ignored nested funcs / classes."""
-        nested_cls = [n for n in nodes if n.is_nested_cls]
-        inner_nested_nodes = [n for n in nodes if n.parent in nested_cls]
-
-        filtered_nodes = [n for n in nodes if n not in inner_nested_nodes]
-        filtered_nodes = [n for n in filtered_nodes if n not in nested_cls]
-        return filtered_nodes
-
-    async def generate_file_docstrings(self, filename: str) -> List[GPT4DocstringsNode]:
-        """
-        Generates docstrings for a single file.
+    # flake8: noqa: C901
+    def generate_file_docstrings(self, filename: str):
+        """Generates docstrings for a single file.
 
         Args:
             filename (str): The path of the file to generate docstrings for.
         """
+        source = RedBaron(open(filename, encoding="utf-8").read())
         click.echo(click.style(f"Documenting file {filename} ... ", fg="green"))
 
-        with open(filename, encoding="utf-8") as f:
-            source_tree = f.read()
+        for node in source.find_all("def"):
+            if not utils.check_def_node_is_class_method(
+                node
+            ) and not utils.check_def_node_is_nested(node):
+                if not node.value[0].type == "string":
+                    try:
+                        fn_docstring = (
+                            self.docstring_generator.generate_function_docstring(
+                                node.dumps()
+                            )
+                        )
+                        node.value.insert(0, fn_docstring["docstring"])
+                        self.documented_nodes.append([filename, node.name])
+                    except DocstringParsingError:
+                        logging.warning(
+                            f"Skipping {node.name} from {filename} due to errors when parsing"
+                        )
+                    except ASTError:
+                        logging.warning(
+                            f"Skipping {node.name} from {filename} due to errors when accessing AST node"
+                        )
 
-        parsed_tree = ast.parse(source_tree)
-        visitor = GPT4DocstringsVisitor(
-            filename=filename, config=GPT4DocstringsConfig()
-        )
-        visitor.visit(parsed_tree)
-        nodes = self._filter_nodes(visitor.nodes)
-        tasks = []
+        for node in source.find_all("class"):
+            if not node.value[0].type == "string":
+                try:
+                    class_docstring = self.docstring_generator.generate_class_docstring(
+                        node.dumps()
+                    )
+                    node.value.insert(
+                        0,
+                        class_docstring["docstring"],
+                    )
 
-        for node in nodes:
-            tasks.append(self.docstring_generator.generate_docstring(node))
-            self.documented_nodes.append([filename, node.name])
+                    for method_node in node.value:
+                        if (
+                            method_node.type == "def"
+                            and not utils.check_is_private_method(method_node)
+                            and not method_node.value[0].type == "string"
+                            and not utils.check_def_node_is_nested(method_node)
+                        ):
+                            method_node.value.insert(
+                                0, class_docstring[method_node.name]
+                            )
 
-        docstrings = await asyncio.gather(*tasks)
-        for node, docstring in zip(nodes, docstrings, strict=True):
-            node.ast_node.body.insert(0, docstring.to_ast())
+                    self.documented_nodes.append([filename, node.name])
+                except DocstringParsingError:
+                    logging.warning(
+                        f"Skipping {node.name} from {filename} due to errors when parsing"
+                    )
+                except ASTError:
+                    logging.warning(
+                        f"Skipping {node.name} from {filename} due to errors when accessing AST node"
+                    )
 
-        self._write_to_filename(filename, ast.unparse(parsed_tree))
-
-    @staticmethod
-    def _write_to_filename(filename: str, content: str):
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(content)
+        utils.write_updated_source_to_file(source, filename)
 
     def generate_docstrings(self):
         """Generates docstrings for the input files or directories."""
         filenames = self.get_filenames_from_paths()
         click.echo(click.style(title, fg="green"))
-        loop = asyncio.get_event_loop()
 
         for filename in filenames:
-            loop.run_until_complete(self.generate_file_docstrings(filename))
+            self.generate_file_docstrings(filename)
 
         if self.verbose > 0:
             self.__print_pretty_documentation_table()
