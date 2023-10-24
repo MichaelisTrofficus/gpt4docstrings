@@ -1,6 +1,6 @@
 import time
 
-import openai
+from gpt4docstrings.exceptions import DocstringParsingError
 
 
 def retry(max_retries, delay):
@@ -12,7 +12,7 @@ def retry(max_retries, delay):
             while retries < max_retries:
                 try:
                     return func(*args, **kwargs)
-                except (openai.error.APIError, openai.error.ServiceUnavailableError):
+                except DocstringParsingError:
                     time.sleep(delay)
                     retries += 1
             raise Exception(f"Max retries ({max_retries}) exceeded.")

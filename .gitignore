@@ -328,3 +328,4 @@ pyrightconfig.json
 chatgpt_experiment.py
 chatgpt_battery.py
 chatgpt_battery_classes.py
+*.diff

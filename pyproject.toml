@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gpt4docstrings"
-version = "0.1.2"
+version = "0.1.3"
 description = "gpt4docstrings"
 authors = ["Miguel Otero Pedrido <miguel.otero.pedrido.1993@gmail.com>"]
 license = "MIT"
@@ -25,6 +25,11 @@ pytest-mock = "^3.11.1"
 tabulate = "^0.9.0"
 colorama = "^0.4.6"
 langchain = "^0.0.311"
+toml = "^0.10.2"
+asyncio = "^3.4.3"
+aiofiles = "^23.2.1"
+reorder-python-imports = "^3.12.0"
+astor = "^0.8.1"
 
 [tool.poetry.dev-dependencies]
 Pygments = ">=2.10.0"
