@@ -1,55 +1,28 @@
 import ast
 import asyncio
+import difflib
 import os
 import pathlib
 import sys
 from fnmatch import fnmatch
+from itertools import chain
 from typing import List
 from typing import Union
 
 import click
 from colorama import Fore
 from tabulate import tabulate
+from tqdm.asyncio import tqdm_asyncio
 
 from gpt4docstrings import utils
 from gpt4docstrings.ascii_title import title
 from gpt4docstrings.config import GPT4DocstringsConfig
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
+from gpt4docstrings.docstrings_generators.docstring import Docstring
 from gpt4docstrings.visit import GPT4DocstringsVisitor
 
 
 class GPT4Docstrings:
-    """A class for generating docstrings for Python files using GPT-4 model.
-
-    Args:
-        paths (Union[str, List[str]]): The paths to the Python files or directories to generate docstrings for.
-        excluded (Optional): A list of file patterns to exclude from docstring generation. Defaults to None.
-        model (str): The GPT model to use for generating docstrings. Defaults to "gpt-3.5-turbo".
-        docstring_style (str): The style of docstrings to generate. Must be one of ["google", "numpy",
-            "reStructuredText", "epytext"]. Defaults to "google".
-        api_key (str): The API key for accessing the GPT model. Defaults to None.
-        verbose (int): The verbosity level. Set to 0 for no output, 1 for basic output, and 2 for detailed output.
-            Defaults to 0.
-        config (GPT4DocstringsConfig): Configuration for GPT4Docstrings
-
-
-    Attributes:
-        paths (Union[str, List[str]]): The paths to the Python files or directories to generate docstrings for.
-        excluded (Optional): A list of file patterns to exclude from docstring generation.
-        common_base (pathlib.Path): The common base path of the input files or directories.
-        docstring_generator (ChatGPTDocstringGenerator): The docstring generator object.
-        verbose (int): The verbosity level.
-        documented_nodes (List[List[str]]): A list of documented functions and classes.
-
-    Methods:
-        print_pretty_documentation_table: Prints a pretty table of the documented functions and classes.
-        _filter_files: Filters the input files based on the excluded patterns.
-        get_filenames_from_paths: Retrieves the filenames from the input paths.
-        _generate_file_docstrings: Generates docstrings for a single file.
-        _generate_docstrings: Generates docstrings for multiple files.
-        generate_docstrings: Generates docstrings for the input files or directories.
-    """
-
     def __init__(
         self,
         paths: Union[str, List[str]],
@@ -76,6 +49,8 @@ class GPT4Docstrings:
         self.verbose = verbose
         self.documented_nodes = []
         self.config = config
+
+        self.patches = []
 
     def __print_pretty_documentation_table(self):
         """Prints a pretty table of the documented functions and classes."""
@@ -114,6 +89,9 @@ class GPT4Docstrings:
         filenames = []
 
         for path in self.paths:
+            if path.startswith("./"):
+                path = path[2:]
+
             if os.path.isfile(path):
                 if not path.endswith(".py"):
                     return sys.exit(1)
@@ -155,6 +133,61 @@ class GPT4Docstrings:
         filtered_nodes = [n for n in filtered_nodes if n not in nested_cls]
         return filtered_nodes
 
+    @staticmethod
+    def _read_file(filename: str, read_lines: bool = False) -> Union[str, List[str]]:
+        with open(filename, encoding="utf-8") as file:
+            return file.readlines() if read_lines else file.read()
+
+    @staticmethod
+    def _write_to_file(filename: str, content: str):
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    @staticmethod
+    def _build_file_with_docstrings(source_file: str, docstrings: List[Docstring]):
+        docstrings_positions = {
+            docstring.lineno - 1: docstring.to_str() for docstring in docstrings
+        }
+
+        lines = []
+
+        for i, line in enumerate(source_file.split("\n")):
+            lines.append(line)
+            if i in docstrings_positions:
+                lines.extend(docstrings_positions[i].splitlines())
+
+        target_file = "\n".join(lines)
+
+        return target_file
+
+    @staticmethod
+    def _get_patch_lines(src: str, target: str, filename: str):
+        src_lines = [line + "\n" for line in src.splitlines()]
+        target_lines = [line + "\n" for line in target.splitlines()]
+
+        fromfile = "a/" + filename
+        tofile = "b/" + filename
+
+        differ = list(
+            difflib.unified_diff(
+                src_lines, target_lines, fromfile=fromfile, tofile=tofile
+            )
+        )
+        return differ
+
+    def _generate_patch_file(self, src: str, target: str, filename: str):
+        differ = self._get_patch_lines(src, target, filename)
+        self.patches.append(differ)
+
+    def _write_concatenated_patch_file(self):
+        concatenated_patch = list(chain.from_iterable(self.patches))
+
+        if concatenated_patch:
+            with open(
+                "gpt4docstring_docstring_generator_patch.diff", "w"
+            ) as patch_file:
+                patch_file.writelines(concatenated_patch)
+
     async def generate_file_docstrings(self, filename: str):
         """
         Generates docstrings for a single file.
@@ -162,33 +195,31 @@ class GPT4Docstrings:
         Args:
             filename (str): The path of the file to generate docstrings for.
         """
-        click.echo(click.style(f"Documenting file {filename} ... ", fg="green"))
+        click.echo(click.style(f"Documenting file {filename} ... \n", fg="green"))
 
         with open(filename, encoding="utf-8") as f:
-            source_tree = f.read()
+            source_file = f.read()
 
-        parsed_tree = ast.parse(source_tree)
+        parsed_tree = ast.parse(source_file)
         visitor = GPT4DocstringsVisitor(
             filename=filename, config=GPT4DocstringsConfig()
         )
         visitor.visit(parsed_tree)
-        nodes = self._filter_nodes(visitor.nodes)
+        nodes = self._filter_inner_nested(self._filter_nodes(visitor.nodes))
+
         tasks = []
 
         for node in nodes:
             tasks.append(self.docstring_generator.generate_docstring(node))
             self.documented_nodes.append([filename, node.name])
 
-        docstrings = await asyncio.gather(*tasks)
-        for node, docstring in zip(nodes, docstrings, strict=True):
-            node.ast_node.body.insert(0, docstring.to_ast())
+        docstrings = await tqdm_asyncio.gather(*tasks)
+        target_file = self._build_file_with_docstrings(source_file, docstrings)
 
-        self._write_to_filename(filename, ast.unparse(parsed_tree))
-
-    @staticmethod
-    def _write_to_filename(filename: str, content: str):
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(content)
+        if self.config.update_file:
+            self._write_to_file(filename, target_file)
+        else:
+            self._generate_patch_file(source_file, target_file, filename)
 
     def generate_docstrings(self):
         """Generates docstrings for the input files or directories."""
@@ -198,6 +229,9 @@ class GPT4Docstrings:
 
         for filename in filenames:
             loop.run_until_complete(self.generate_file_docstrings(filename))
+
+        if not self.config.update_file:
+            self._write_concatenated_patch_file()
 
         if self.verbose > 0:
             self.__print_pretty_documentation_table()

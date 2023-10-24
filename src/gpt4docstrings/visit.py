@@ -190,11 +190,6 @@ class GPT4DocstringsVisitor(ast.NodeVisitor):
         if self.config.ignore_semiprivate and is_semiprivate:
             return True
 
-        if self.config.ignore_regex:
-            for regexp in self.config.ignore_regex:
-                regex_result = regexp.match(node.name)
-                if regex_result:
-                    return True
         return False
 
     @staticmethod
@@ -227,19 +222,10 @@ class GPT4DocstringsVisitor(ast.NodeVisitor):
     def _is_func_ignored(self, node):
         """Should the AST visitor ignore this func/method node."""
         is_init = node.name == "__init__"
-        is_magic = all(
-            [
-                node.name.startswith("__"),
-                node.name.endswith("__"),
-                node.name != "__init__",
-            ]
-        )
         has_property_decorators = self._has_property_decorators(node)
         has_setters = self._has_setters(node)
 
         if self.config.ignore_init_method and is_init:
-            return True
-        if self.config.ignore_magic and is_magic:
             return True
         if self.config.ignore_property_decorators and has_property_decorators:
             return True

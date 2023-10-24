@@ -84,4 +84,5 @@ class ChatGPTDocstringGenerator:
                 return Docstring(
                     text=ast.get_docstring(n),
                     col_offset=n.body[-1].col_offset + parent_offset,
+                    lineno=node.lineno,
                 )
