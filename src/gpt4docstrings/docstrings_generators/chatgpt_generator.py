@@ -1,4 +1,3 @@
-import ast
 import os
 import textwrap
 
@@ -7,6 +6,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 from gpt4docstrings.docstrings_generators.docstring import Docstring
+from gpt4docstrings.docstrings_generators.utils.decorators import retry
 from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParser
 from gpt4docstrings.docstrings_generators.utils.prompts import CLASS_PROMPTS
 from gpt4docstrings.docstrings_generators.utils.prompts import FUNCTION_PROMPTS
@@ -56,6 +56,7 @@ class ChatGPTDocstringGenerator:
         else:
             return self.class_prompt_template
 
+    @retry()
     async def generate_docstring(self, node: GPT4DocstringsNode) -> Docstring:
         """
         Generates a docstring for a function.
@@ -76,13 +77,10 @@ class ChatGPTDocstringGenerator:
             input_variables=["code"],
         )
         _input = prompt.format_prompt(code=stripped_source)
-        src = DocstringParser().parse(await self._get_completion(_input.to_string()))
+        docstring = DocstringParser().parse(
+            await self._get_completion(_input.to_string())
+        )
 
-        tree = ast.parse(src)
-        for n in ast.walk(tree):
-            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                return Docstring(
-                    text=ast.get_docstring(n),
-                    col_offset=n.body[-1].col_offset + parent_offset,
-                    lineno=node.lineno,
-                )
+        return Docstring(
+            text=docstring, col_offset=4 + parent_offset, lineno=node.docstring_lineno
+        )

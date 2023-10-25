@@ -43,7 +43,7 @@ If I give you this Python function:
 The documented function using a Google docstring will be:
 ''',
     "numpy": '''
-If I give you this Python function:
+For this Python function:
 
 ```python
 def calculate_average(numbers):
@@ -54,42 +54,34 @@ def calculate_average(numbers):
     return total / count
 ```
 
-The documented function using a NumPy docstring will be:
+The function docstring using NumPy style is:
 
-```python
-def calculate_average(numbers):
-    """
-    Calculate the average of a list of numbers.
+"""
+Calculate the average of a list of numbers.
 
-    Parameters
-    ----------
-    numbers : list
-        A list of numeric values.
+Parameters
+----------
+numbers : list
+    A list of numeric values.
 
-    Returns
-    -------
-    float
-        The average of the input numbers.
+Returns
+-------
+float
+    The average of the input numbers.
 
-    Raises
-    ------
-    ZeroDivisionError
-        If the input list is empty.
-    """
-    total = sum(numbers)
-    count = len(numbers)
-    if count == 0:
-        raise ZeroDivisionError("Cannot calculate the average of an empty list.")
-    return total / count
-```
+Raises
+------
+ZeroDivisionError
+    If the input list is empty.
+"""
 
-If I give you this Python function:
+For this Python function:
 
 ```python
 {code}
 ```
 
-The documented function using a NumPy docstring will be:
+The function docstring using NumPy style is:
 ''',
     "reStructuredText": '''
 If I give you this Python function:
@@ -245,7 +237,7 @@ If I give you this Python class:
 The documented class using Google docstrings will be:
 ''',
     "numpy": '''
-If I give you this Python class:
+For this Python class:
 
 ```python
 class Student:
@@ -260,65 +252,26 @@ class Student:
         print(self.name + " is taking an exam in " + subject + ".")
 ```
 
-The documented class using NumPy docstrings will be:
+The class docstring using Numpy style is:
 
-```python
-class Student:
-    """
-    A class representing a student.
+"""
+A class representing a student.
 
-    Parameters
-    ----------
-    name : str
-        The student's name.
-    student_id : int
-        The unique identifier for the student.
-    """
+Parameters
+----------
+name : str
+    The student's name.
+student_id : int
+    The unique identifier for the student.
+"""
 
-    def __init__(self, name, student_id):
-        """
-        Initialize a new Student instance.
-
-        Parameters
-        ----------
-        name : str
-            The student's name.
-        student_id : int
-            The unique identifier for the student.
-        """
-        self.name = name
-        self.student_id = student_id
-
-    def study(self, subject):
-        """
-        Simulate the student studying a subject.
-
-        Parameters
-        ----------
-        subject : str
-            The subject the student is studying.
-        """
-        print(self.name + " is studying " + subject + ".")
-
-    def take_exam(self, subject):
-        """
-        Have the student take an exam for a subject.
-
-        Parameters
-        ----------
-        subject : str
-            The subject for which the student is taking an exam.
-        """
-        print(self.name + " is taking an exam in " + subject + ".")
-```
-
-If I give you this Python class:
+For this Python class:
 
 ```python
 {code}
 ```
 
-The documented class using NumPy docstrings will be:
+The class docstring using Numpy style is:
 ''',
     "reStructuredText": '''
 If I give you this Python class:

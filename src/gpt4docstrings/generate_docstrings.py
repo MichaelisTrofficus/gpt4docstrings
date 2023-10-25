@@ -5,7 +5,6 @@ import os
 import pathlib
 import sys
 from fnmatch import fnmatch
-from itertools import chain
 from typing import List
 from typing import Union
 
@@ -180,7 +179,11 @@ class GPT4Docstrings:
         self.patches.append(differ)
 
     def _write_concatenated_patch_file(self):
-        concatenated_patch = list(chain.from_iterable(self.patches))
+        concatenated_patch = []
+
+        for patch in self.patches:
+            concatenated_patch.extend(patch)
+            concatenated_patch.append("\n")
 
         if concatenated_patch:
             with open(
@@ -195,8 +198,7 @@ class GPT4Docstrings:
         Args:
             filename (str): The path of the file to generate docstrings for.
         """
-        click.echo(click.style(f"Documenting file {filename} ... \n", fg="green"))
-
+        click.echo(f"\n\n Documenting filename {filename} ... ")
         with open(filename, encoding="utf-8") as f:
             source_file = f.read()
 

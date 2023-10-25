@@ -1,21 +1,24 @@
-import time
+import asyncio
+import logging
 
 from gpt4docstrings.exceptions import DocstringParsingError
 
 
-def retry(max_retries, delay):
+def retry(max_retries=5, delay=5):
     """Decorator for retrying a function with a specified number of retries and delay between retries."""
 
     def decorator(func):
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             retries = 0
             while retries < max_retries:
                 try:
-                    return func(*args, **kwargs)
-                except DocstringParsingError:
-                    time.sleep(delay)
+                    return await func(*args, **kwargs)
+                except (DocstringParsingError, SyntaxError) as e:
+                    logging.warning(e)
                     retries += 1
-            raise Exception(f"Max retries ({max_retries}) exceeded.")
+                    if retries >= max_retries:
+                        raise Exception(f"Max retries ({max_retries}) exceeded.")
+                    await asyncio.sleep(delay)
 
         return wrapper
 

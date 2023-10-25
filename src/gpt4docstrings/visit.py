@@ -22,7 +22,6 @@ class GPT4DocstringsNode:
         path (str): Pseudo-import path to the node (e.g., "sample.py:MyClass.my_method").
         source (str): The source code of the function / class
         level (int): Level of recursiveness/indentation.
-        lineno (int): Line number of the class, method, or function.
         covered (bool): Indicates whether the node has a docstring.
         node_type (str): Type of node (e.g., "module," "class," or "function")
         is_nested_func (bool): Specifies if the node is a nested function or method.
@@ -39,7 +38,7 @@ class GPT4DocstringsNode:
     source = attr.ib()
     ast_node = attr.ib()
     level = attr.ib()
-    lineno = attr.ib()
+    docstring_lineno = attr.ib()
     col_offset = attr.ib()
     covered = attr.ib()
     node_type = attr.ib()
@@ -98,15 +97,13 @@ class GPT4DocstringsVisitor(ast.NodeVisitor):
             else:
                 path = parent_path + "." + node_name
 
-        lineno = None
-        if hasattr(node, "lineno"):
-            lineno = node.lineno
-            # Python 3.8+ fixed the line number calc for decorated functions;
-            # previously the AST node would report the line number of the
-            # decorator, not the obj itself. We're going to try and back-port.
-            if not PY_38_HIGHER:
-                if hasattr(node, "decorator_list"):
-                    lineno += len(node.decorator_list)
+        docstring_lineno = None
+        if (
+            hasattr(node, "body")
+            and len(node.body) > 0
+            and hasattr(node.body[0], "lineno")
+        ):
+            docstring_lineno = node.body[0].lineno - 1
 
         node_type = type(node).__name__
         cov_node = GPT4DocstringsNode(
@@ -117,7 +114,7 @@ class GPT4DocstringsVisitor(ast.NodeVisitor):
             covered=self._has_doc(node),
             level=len(self.stack),
             node_type=node_type,
-            lineno=lineno,
+            docstring_lineno=docstring_lineno,
             col_offset=self._get_col_offset(node),
             is_nested_func=self._is_nested_func(parent, node_type),
             is_nested_cls=self._is_nested_cls(parent, node_type),
