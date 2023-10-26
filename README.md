@@ -41,63 +41,239 @@ to be applied and wait for the results!!
 
 ## Installation
 
-You can install _gpt4docstrings_ via [pip] from [PyPI]:
+> **Warning:** At the moment, this library is under heavy development, so it is recommended to always install
+> the latest version.
+>
+> You can install _gpt4docstrings_ via [pip] from [PyPI]:
 
 ```console
-$ pip install gpt4docstrings
+$ pip install -U gpt4docstrings
 ```
 
 ## Usage
 
-##### Command Line Interface
-
-The first option when using `gpt4docstrings` is to use it as a Command Line Interface (CLI).
-
-The following is an example command that generates docstrings for all the non-documented
-classes / functions under `src/` directory.
+To run `gpt4docstrings` on a specific file, run this command.
 
 ```bash
-gpt4docstrings src/
-```
-
-Another quite common situation is that we want to exclude the `tests/` folder, for example,
-from the generation of docstrings. Doing this is very simple.
-
-```bash
-gpt4docstrings --exclude tests/ .
-```
-
-Lastly, you could also run `gpt4docstrings` in a specific Python file.
-
-```bash
-gpt4docstrings ./src/example.py
+gpt4docstrings my_file.py
 ```
 
 Remember that, if you don't have your OpenAI API Key defined as an Environment Variable (OPENAI_API_KEY),
 `gpt4docstrings` can accept the API Key as an option.
 
 ```bash
-gpt4docstrings --exclude tests/ --api_key sk-xxxxxxxxxxxx .
+gpt4docstrings --api_key sk-xxxxxxxxxxxx my_file.py
 ```
 
-##### pre-commit hook
+Be aware that, as a safety measure , `gpt4docstrings` won't overwrite the file in place.
+Instead, it will generate a `patch` called `gpt4docstring_docstring_generator_patch.diff`
+that contains the information about all the changes.
 
-Another cool use of `gpt4docstrings` is as a `precommit` hook.
-All you have to do is add it to your configuration file and you’re done!
+If you want to apply the `patch` to the file, simply run:
 
-```yaml
-repos:
-  - repo: https://github.com/MichaelisTrofficus/gpt4docstrings
-    rev: v0.1.0
-    hooks:
-      - id: gpt4docstrings
-        name: gpt4docstrings
-        language: python
-        entry: gpt4docstrings
-        types: [python]
+```bash
+patch -p1 < gpt4docstring_docstring_generator_patch.diff
 ```
 
-Please see the [Command-line Reference] for more details!!
+In case you don't want to generate a `patch` file and modify the files in place, you'll
+need to add the `--overwrite, -w` option:
+
+```bash
+gpt4docstrings -w my_file.py
+```
+
+You can also apply `gpt4docstrings` to folders recursively.
+
+```bash
+gpt4docstrings src/
+```
+
+Another quite common situation is that you may want to exclude the `tests/` folder, for example,
+from the generation of docstrings. Doing this is very simple.
+
+```bash
+gpt4docstrings --exclude tests/ src/
+```
+
+By default, `gpt4docstrings` generates `google` style docstrings. However,
+you can choose between: `google`, `numpy`, `epytext`, `reStructuredText`.
+
+You can specify the docstring style using the `-st` option. For example:
+
+```bash
+gpt4docstrings -st epytext my_file.py
+```
+
+For more information about all the available options, you can check
+the `help` info:
+
+```
+Usage: gpt4docstrings [OPTIONS] [PATHS]...
+
+Options:
+  -h, --help                      Show this message and exit.
+  -S, --ignore-setters            Ignore methods with property setter
+                                  decorators.
+  -P, --ignore-property-decorators
+                                  Ignore methods with property setter/getter
+                                  decorators.
+  -n, --ignore-nested-functions   Ignore nested functions and methods.
+  -C, --ignore-nested-classes     Ignore nested classes.
+  -i, --ignore-init-method        Ignore `__init__` method of classes.
+  -s, --ignore-semiprivate        Ignore semiprivate classes, methods, and
+                                  functions starting with a single underscore.
+  -p, --ignore-private            Ignore private classes, methods, and
+                                  functions starting with two underscores.
+                                  [default: False]
+  -w, --overwrite                 If `True`, it will directly write the
+                                  docstrings into the files (it will not
+                                  generate git patches)
+  -v, --verbose INTEGER           Verbosity parameter. Defaults to 0.
+  -e, --exclude PATH              Exclude PATHs of files and/or directories.
+                                  Multiple `-e/--exclude` invocations
+                                  supported.
+  -k, --api_key TEXT              OpenAI's API key. If not provided,
+                                  `gpt4docstrings` will try to access
+                                  `OPENAI_API_KEY` environment variable.
+  -st, --style TEXT               Docstring style, which must be one of
+                                  'google', 'reStructuredText', 'epytext',
+                                  'numpy'
+  -m, --model TEXT                The model to be used by `gpt4docstrings`. By
+                                  default, `gpt-3.5-turbo`.
+```
+
+I also encourage you to see the [Command-line Reference] for more details!!
+
+## Example
+
+Here is a full example using `gpt4docstring` to generate docstrings
+for the python code inside `example/example.py`.
+
+```python
+import asyncio
+
+
+async def async_example():
+    await asyncio.sleep(2)
+
+
+class MyClass:
+
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def nested_method():
+        def inner_function():
+            print("Nested method inner function")
+        print("Nested method start")
+        inner_function()
+        print("Nested method completed")
+```
+
+We'll create `numpy` docstrings in this case and will generate a patch file (default) instead of directly overwriting
+the file directly. We'll also increase the level of verbosity to see some additional information.
+
+> **Warning:** We are assuming you already have the OpenAI API Key set as an Environment Variable. Otherwise, this
+> example won't work.
+
+```
+gpt4docstrings example/example.py -v 1 -st numpy
+```
+
+![gpt4docstring-command-run.gif](images%2Fgpt4docstring-command-run.gif)
+
+After it finishes documenting, we should see a new patch file on our directory called `gpt4docstring_docstring_generator_patch.diff`.
+
+```patch
+--- a//Users/moteroperdido/Desktop/projects/gpt4docstrings/example/example.py
++++ b//Users/moteroperdido/Desktop/projects/gpt4docstrings/example/example.py
+@@ -2,17 +2,78 @@
+
+
+ async def async_example():
++    """
++    An asynchronous example function.
++
++    This function demonstrates the use of the `async` keyword and `asyncio.sleep()` to create an asynchronous delay.
++
++    Returns
++    -------
++    None
++        This function does not return any value.
++
++    Raises
++    ------
++    None
++        This function does not raise any exceptions.
++    """
+     await asyncio.sleep(2)
+
+
+ class MyClass:
+
++    """
++    A class representing MyClass.
++
++    Parameters
++    ----------
++    value : any
++        The initial value for MyClass.
++
++    Methods
++    -------
++    nested_method()
++        A static method that demonstrates nested functions.
++    """
+     def __init__(self, value):
++        """
++        Initialize a new instance of the class.
++
++        Parameters
++        ----------
++        value : any
++            The value to assign to the instance variable.
++
++        Returns
++        -------
++        None
++        """
+         self.value = value
+
+     @staticmethod
+     def nested_method():
++        """
++        Perform a nested method execution.
++
++        This method has an inner function that is called within the outer method.
++
++        Parameters
++        ----------
++        None
++
++        Returns
++        -------
++        None
++        """
+         def inner_function():
++            """
++            This function is an inner function with no parameters or return values.
++
++            Raises
++            ------
++            None
++                This function does not raise any exceptions.
++            """
+             print("Nested method inner function")
+         print("Nested method start")
+         inner_function()
+```
+
+To apply the patch, simply run:
+
+```bash
+patch -p1 < gpt4docstring_docstring_generator_patch.diff
+```
 
 ## Contributing
 

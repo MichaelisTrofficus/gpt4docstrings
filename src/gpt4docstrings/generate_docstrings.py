@@ -218,7 +218,7 @@ class GPT4Docstrings:
         docstrings = await tqdm_asyncio.gather(*tasks)
         target_file = self._build_file_with_docstrings(source_file, docstrings)
 
-        if self.config.update_file:
+        if self.config.overwrite:
             self._write_to_file(filename, target_file)
         else:
             self._generate_patch_file(source_file, target_file, filename)
@@ -232,7 +232,7 @@ class GPT4Docstrings:
         for filename in filenames:
             loop.run_until_complete(self.generate_file_docstrings(filename))
 
-        if not self.config.update_file:
+        if not self.config.overwrite:
             self._write_concatenated_patch_file()
 
         if self.verbose > 0:

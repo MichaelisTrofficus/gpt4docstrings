@@ -15,7 +15,7 @@ class GPT4DocstringsConfig:
     Configuration related to interrogating a given codebase.
 
     Args:
-        update_file (bool): If `True`, the documented file will be updated in place. This may be dangerous
+        overwrite (bool): If `True`, the documented file will be overwritten. This may be dangerous
             in same cases, so it's better to use patches to confirm the changes to be applied.
         ignore_private (bool): Ignore private classes, methods, and
             functions starting with two underscores.
@@ -27,7 +27,7 @@ class GPT4DocstringsConfig:
             methods.
     """
 
-    update_file = attr.ib(default=False)
+    overwrite = attr.ib(default=False)
     ignore_private = attr.ib(default=False)
     ignore_semiprivate = attr.ib(default=False)
     ignore_init_method = attr.ib(default=False)

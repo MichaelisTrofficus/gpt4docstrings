@@ -49,8 +49,8 @@ from gpt4docstrings.config import GPT4DocstringsConfig
     help="Verbosity parameter. Defaults to 0.",
 )
 @click.option(
-    "-U",
-    "--update-files",
+    "-w",
+    "--overwrite",
     is_flag=True,
     default=False,
     show_default=True,
@@ -138,7 +138,7 @@ def main(paths, **kwargs):
         paths = (os.path.abspath(os.getcwd()),)
 
     config = GPT4DocstringsConfig(
-        update_file=kwargs["update_files"],
+        overwrite=kwargs["overwrite"],
         ignore_private=kwargs["ignore_private"],
         ignore_semiprivate=kwargs["ignore_semiprivate"],
         ignore_init_method=kwargs["ignore_init_method"],
