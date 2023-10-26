@@ -1,8 +1,0 @@
-- id: gpt4docstrings
-  name: gpt4docstrings
-  description: "Automatically create Python docstrings using OpenAI ChatGPT"
-  entry: gpt4docstrings
-  language: python
-  language_version: python3
-  types: [python]
-  require_serial: true
