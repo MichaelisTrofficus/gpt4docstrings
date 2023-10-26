@@ -11,6 +11,6 @@
 ```
 
 ```{eval-rst}
-.. autoclass:: gpt4docstrings.docstrings_generators.dummy_generator.DummyDocstringGenerator
+.. autoclass:: gpt4docstrings.docstrings_generators.docstring.Docstring
    :members:
 ```

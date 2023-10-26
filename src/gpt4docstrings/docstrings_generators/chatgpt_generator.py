@@ -5,6 +5,7 @@ import openai
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
+from gpt4docstrings.docstrings_generators.base import DocstringGenerator
 from gpt4docstrings.docstrings_generators.docstring import Docstring
 from gpt4docstrings.docstrings_generators.utils.decorators import retry
 from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParser
@@ -13,7 +14,7 @@ from gpt4docstrings.docstrings_generators.utils.prompts import FUNCTION_PROMPTS
 from gpt4docstrings.visit import GPT4DocstringsNode
 
 
-class ChatGPTDocstringGenerator:
+class ChatGPTDocstringGenerator(DocstringGenerator):
     """A class for generating Python docstrings using ChatGPT."""
 
     def __init__(
