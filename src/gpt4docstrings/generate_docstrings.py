@@ -19,6 +19,7 @@ from gpt4docstrings.docstring import Docstring
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
 from gpt4docstrings.docstrings_translators import ChatGPTDocstringTranslator
 from gpt4docstrings.utils.helpers import get_common_base
+from gpt4docstrings.visit import GPT4DocstringsNode
 from gpt4docstrings.visit import GPT4DocstringsVisitor
 
 
@@ -29,7 +30,7 @@ class GPT4Docstrings:
         excluded=None,
         model: str = "gpt-3.5-turbo",
         docstring_style: str = "google",
-        translate: bool = False,
+        translate: bool = True,
         api_key: str = None,
         verbose: int = 0,
         config: GPT4DocstringsConfig = None,
@@ -209,23 +210,22 @@ class GPT4Docstrings:
             ) as patch_file:
                 patch_file.writelines(concatenated_patch)
 
-    async def generate_file_docstrings(self, filename: str):
+    async def generate_file_docstrings(
+        self, filename: str, file_content: str, nodes: List[GPT4DocstringsNode]
+    ) -> str:
         """
         Generates docstrings for a single file.
 
         Args:
             filename (str): The path of the file to generate docstrings for.
-        """
-        click.echo(f"\n\n Documenting filename {filename} ... ")
-        with open(filename, encoding="utf-8") as f:
-            source_file = f.read()
+            file_content (str): The content of the file to be processed.
+            nodes (List[GPT4DocstringsNode]): The list of `GPT4DocstringsNode` containing nodes from classes and
+                functions
 
-        parsed_tree = ast.parse(source_file)
-        visitor = GPT4DocstringsVisitor(
-            filename=filename, config=GPT4DocstringsConfig()
-        )
-        visitor.visit(parsed_tree)
-        nodes = self._filter_inner_nested(self._filter_nodes_generation(visitor.nodes))
+        Returns:
+            The new file content
+        """
+        nodes = self._filter_inner_nested(self._filter_nodes_generation(nodes))
 
         tasks = []
 
@@ -234,30 +234,25 @@ class GPT4Docstrings:
             self.documented_nodes.append([filename, node.name])
 
         docstrings = await tqdm_asyncio.gather(*tasks)
-        target_file = self._build_file_with_docstrings(source_file, docstrings)
+        new_file_content = self._build_file_with_docstrings(file_content, docstrings)
+        return new_file_content
 
-        if self.config.overwrite:
-            self._write_to_file(filename, target_file)
-        else:
-            self._generate_patch_file(source_file, target_file, filename)
-
-    async def translate_file_docstrings(self, filename: str):
+    async def translate_file_docstrings(
+        self, filename: str, file_content: str, nodes: List[GPT4DocstringsNode]
+    ) -> str:
         """
         Generates docstrings for a single file.
 
         Args:
             filename (str): The path of the file to generate docstrings for.
-        """
-        click.echo(f"\n\n Documenting filename {filename} ... ")
-        with open(filename, encoding="utf-8") as f:
-            source_file = f.read()
+            file_content (str): The content of the file to be processed.
+            nodes (List[GPT4DocstringsNode]): The list of `GPT4DocstringsNode` containing nodes from classes and
+                functions
 
-        parsed_tree = ast.parse(source_file)
-        visitor = GPT4DocstringsVisitor(
-            filename=filename, config=GPT4DocstringsConfig()
-        )
-        visitor.visit(parsed_tree)
-        nodes = self._filter_inner_nested(self._filter_nodes_translation(visitor.nodes))
+        Returns:
+            The new file content
+        """
+        nodes = self._filter_inner_nested(self._filter_nodes_translation(nodes))
 
         tasks = []
 
@@ -267,17 +262,14 @@ class GPT4Docstrings:
 
         docstrings = await tqdm_asyncio.gather(*tasks)
 
-        target_file = source_file
+        new_file_content = file_content
 
         for node, docstring in zip(nodes, docstrings, strict=True):
-            target_file = target_file.replace(
+            new_file_content = new_file_content.replace(
                 node.ast_node.body[0].value.value,
                 docstring.to_str(add_triple_quotes=False),
             )
-        if self.config.overwrite:
-            self._write_to_file(filename, target_file)
-        else:
-            self._generate_patch_file(source_file, target_file, filename)
+        return new_file_content
 
     def run(self):
         """Generates docstrings for the input files or directories."""
@@ -286,10 +278,30 @@ class GPT4Docstrings:
         loop = asyncio.get_event_loop()
 
         for filename in filenames:
+            click.echo(f"\n\n Documenting filename {filename} ... ")
+            with open(filename, encoding="utf-8") as f:
+                file_content = f.read()
+
+            parsed_tree = ast.parse(file_content)
+            visitor = GPT4DocstringsVisitor(
+                filename=filename, config=GPT4DocstringsConfig()
+            )
+            visitor.visit(parsed_tree)
+
+            new_file_content = loop.run_until_complete(
+                self.generate_file_docstrings(filename, file_content, visitor.nodes)
+            )
             if self.translate:
-                loop.run_until_complete(self.translate_file_docstrings(filename))
+                new_file_content = loop.run_until_complete(
+                    self.translate_file_docstrings(
+                        filename, new_file_content, visitor.nodes
+                    )
+                )
+
+            if self.config.overwrite:
+                self._write_to_file(filename, new_file_content)
             else:
-                loop.run_until_complete(self.generate_file_docstrings(filename))
+                self._generate_patch_file(file_content, new_file_content, filename)
 
         if not self.config.overwrite:
             self._write_concatenated_patch_file()

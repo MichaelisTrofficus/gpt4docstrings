@@ -43,8 +43,8 @@ to be applied and wait for the results!!
 
 > **Warning:** At the moment, this library is under heavy development, so it is recommended to always install
 > the latest version.
->
-> You can install _gpt4docstrings_ via [pip] from [PyPI]:
+
+You can install _gpt4docstrings_ via [pip] from [PyPI]:
 
 ```console
 $ pip install -U gpt4docstrings
@@ -185,94 +185,178 @@ gpt4docstrings example/example.py -v 1 -st numpy
 
 After it finishes documenting, we should see a new patch file on our directory called `gpt4docstring_docstring_generator_patch.diff`.
 
-```patch
---- a//Users/moteroperdido/Desktop/projects/gpt4docstrings/example/example.py
-+++ b//Users/moteroperdido/Desktop/projects/gpt4docstrings/example/example.py
-@@ -2,17 +2,78 @@
-
-
- async def async_example():
-+    """
-+    An asynchronous example function.
-+
-+    This function demonstrates the use of the `async` keyword and `asyncio.sleep()` to create an asynchronous delay.
-+
-+    Returns
-+    -------
-+    None
-+        This function does not return any value.
-+
-+    Raises
-+    ------
-+    None
-+        This function does not raise any exceptions.
-+    """
-     await asyncio.sleep(2)
-
-
- class MyClass:
-
-+    """
-+    A class representing MyClass.
-+
-+    Parameters
-+    ----------
-+    value : any
-+        The initial value for MyClass.
-+
-+    Methods
-+    -------
-+    nested_method()
-+        A static method that demonstrates nested functions.
-+    """
-     def __init__(self, value):
-+        """
-+        Initialize a new instance of the class.
-+
-+        Parameters
-+        ----------
-+        value : any
-+            The value to assign to the instance variable.
-+
-+        Returns
-+        -------
-+        None
-+        """
-         self.value = value
-
-     @staticmethod
-     def nested_method():
-+        """
-+        Perform a nested method execution.
-+
-+        This method has an inner function that is called within the outer method.
-+
-+        Parameters
-+        ----------
-+        None
-+
-+        Returns
-+        -------
-+        None
-+        """
-         def inner_function():
-+            """
-+            This function is an inner function with no parameters or return values.
-+
-+            Raises
-+            ------
-+            None
-+                This function does not raise any exceptions.
-+            """
-             print("Nested method inner function")
-         print("Nested method start")
-         inner_function()
-```
-
 To apply the patch, simply run:
 
 ```bash
 patch -p1 < gpt4docstring_docstring_generator_patch.diff
+```
+
+The result should be similar to the following (`gpt-3.5-turbo` temperature
+is set to 1, so you should expect different results every time you run the command)
+
+```python
+import asyncio
+
+
+async def async_example():
+    """
+    An asynchronous example function.
+
+    This function asynchronously sleeps for 2 seconds.
+
+    Returns
+    -------
+    None
+        This function does not return any value.
+    """
+    await asyncio.sleep(2)
+
+
+class MyClass:
+    """
+    A class representing MyClass.
+
+    Parameters
+    ----------
+    value : any
+        The initial value for MyClass.
+
+    Methods
+    -------
+    nested_method : static method
+        A nested static method within MyClass.
+    """
+    def __init__(self, value):
+        """
+        Initialize a new instance of the class.
+
+        Parameters
+        ----------
+        value : any
+            The initial value for the instance.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        None
+        """
+        self.value = value
+
+    @staticmethod
+    def nested_method():
+        """
+        This static method demonstrates a nested method.
+
+        Raises
+        ------
+        None
+
+        Returns
+        -------
+        None
+        """
+        def inner_function():
+            """
+            Inner function.
+
+            This function performs a nested method inner function.
+
+            Parameters
+            ----------
+            None
+
+            Returns
+            -------
+            None
+            """
+            print("Nested method inner function")
+
+        print("Nested method start")
+        inner_function()
+        print("Nested method completed")
+```
+
+Suppose now that we want to modify the docstring type. For example,
+suppose we want to use `epytext` style. That's very easy with
+`gpt4docstrings`, we just need to run the same command changing the docstring style.
+
+> Be aware that, by default, `gpt4docstrings` will allways generate
+> docstrings for undocumented functions / classes and also translate the existing
+> ones to follow the provided style. If you just want to generate docstrings (no translation),
+> simply set the `-t` flag to `False`.
+
+```bash
+gpt4docstrings example/example.py -st epytext
+```
+
+If we apply the patch, we'll get the previous code with the
+docstrings translated:
+
+```python
+import asyncio
+
+
+async def async_example():
+    """
+    An asynchronous example function.
+
+    This function asynchronously sleeps for 2 seconds.
+
+    @rtype: None
+    @return: This function does not return any value.
+    """
+    await asyncio.sleep(2)
+
+
+class MyClass:
+    """
+    A class representing MyClass.
+
+    @type value: any
+    @ivar value: The initial value for MyClass.
+
+    @type nested_method: static method
+    @ivar nested_method: A nested static method within MyClass.
+    """
+    def __init__(self, value):
+        """
+        Initialize a new instance of the class.
+
+        @param value: The initial value for the instance.
+        @type value: any
+
+        @return: None
+
+        @raise None
+        """
+        self.value = value
+
+    @staticmethod
+    def nested_method():
+        """
+        This static method demonstrates a nested method.
+
+        @rtype: None
+        @return: None
+
+        @raise: None
+        """
+        def inner_function():
+            """
+            Inner function.
+
+            This function performs a nested method inner function.
+
+            @rtype: None
+            """
+            print("Nested method inner function")
+
+        print("Nested method start")
+        inner_function()
+        print("Nested method completed")
 ```
 
 ## Contributing
