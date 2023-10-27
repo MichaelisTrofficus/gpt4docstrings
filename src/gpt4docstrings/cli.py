@@ -17,7 +17,7 @@ from gpt4docstrings.config import GPT4DocstringsConfig
     "-t",
     "--translate",
     is_flag=True,
-    default=False,
+    default=True,
     show_default=True,
     help="If `True`, instead of creating new docstrings, it will translate the existing ones into the provided style",
 )
