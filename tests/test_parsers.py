@@ -1,7 +1,7 @@
 import pytest
 
-from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParser
-from gpt4docstrings.docstrings_generators.utils.parsers import DocstringParsingError
+from gpt4docstrings.utils.parsers import DocstringParser
+from gpt4docstrings.utils.parsers import DocstringParsingError
 
 
 def test_docstring():

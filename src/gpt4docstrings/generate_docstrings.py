@@ -13,11 +13,12 @@ from colorama import Fore
 from tabulate import tabulate
 from tqdm.asyncio import tqdm_asyncio
 
-from gpt4docstrings import utils
 from gpt4docstrings.ascii_title import title
 from gpt4docstrings.config import GPT4DocstringsConfig
+from gpt4docstrings.docstring import Docstring
 from gpt4docstrings.docstrings_generators import ChatGPTDocstringGenerator
-from gpt4docstrings.docstrings_generators.docstring import Docstring
+from gpt4docstrings.docstrings_translators import ChatGPTDocstringTranslator
+from gpt4docstrings.utils.helpers import get_common_base
 from gpt4docstrings.visit import GPT4DocstringsVisitor
 
 
@@ -28,6 +29,7 @@ class GPT4Docstrings:
         excluded=None,
         model: str = "gpt-3.5-turbo",
         docstring_style: str = "google",
+        translate: bool = False,
         api_key: str = None,
         verbose: int = 0,
         config: GPT4DocstringsConfig = None,
@@ -44,10 +46,14 @@ class GPT4Docstrings:
         self.docstring_generator = ChatGPTDocstringGenerator(
             api_key=api_key, model_name=model, docstring_style=docstring_style
         )
+        self.docstring_translator = ChatGPTDocstringTranslator(
+            api_key=api_key, model_name=model, docstring_style=docstring_style
+        )
 
         self.verbose = verbose
         self.documented_nodes = []
         self.config = config
+        self.translate = translate
 
         self.patches = []
 
@@ -107,11 +113,11 @@ class GPT4Docstrings:
         if not filenames:
             return sys.exit(1)
 
-        self.common_base = utils.get_common_base(filenames)
+        self.common_base = get_common_base(filenames)
         return filenames
 
     @staticmethod
-    def _filter_nodes(nodes):
+    def _filter_nodes_generation(nodes):
         """Filters the parsed nodes to only consider classes and functions"""
         return [
             node
@@ -119,6 +125,18 @@ class GPT4Docstrings:
             if (
                 (node.node_type in ["ClassDef", "FunctionDef", "AsyncFunctionDef"])
                 and not node.covered
+            )
+        ]
+
+    @staticmethod
+    def _filter_nodes_translation(nodes):
+        """Filters the parsed nodes to only consider classes and functions"""
+        return [
+            node
+            for node in nodes
+            if (
+                (node.node_type in ["ClassDef", "FunctionDef", "AsyncFunctionDef"])
+                and node.covered
             )
         ]
 
@@ -207,7 +225,7 @@ class GPT4Docstrings:
             filename=filename, config=GPT4DocstringsConfig()
         )
         visitor.visit(parsed_tree)
-        nodes = self._filter_inner_nested(self._filter_nodes(visitor.nodes))
+        nodes = self._filter_inner_nested(self._filter_nodes_generation(visitor.nodes))
 
         tasks = []
 
@@ -223,14 +241,55 @@ class GPT4Docstrings:
         else:
             self._generate_patch_file(source_file, target_file, filename)
 
-    def generate_docstrings(self):
+    async def translate_file_docstrings(self, filename: str):
+        """
+        Generates docstrings for a single file.
+
+        Args:
+            filename (str): The path of the file to generate docstrings for.
+        """
+        click.echo(f"\n\n Documenting filename {filename} ... ")
+        with open(filename, encoding="utf-8") as f:
+            source_file = f.read()
+
+        parsed_tree = ast.parse(source_file)
+        visitor = GPT4DocstringsVisitor(
+            filename=filename, config=GPT4DocstringsConfig()
+        )
+        visitor.visit(parsed_tree)
+        nodes = self._filter_inner_nested(self._filter_nodes_translation(visitor.nodes))
+
+        tasks = []
+
+        for node in nodes:
+            tasks.append(self.docstring_translator.translate_docstring(node))
+            self.documented_nodes.append([filename, node.name])
+
+        docstrings = await tqdm_asyncio.gather(*tasks)
+
+        target_file = source_file
+
+        for node, docstring in zip(nodes, docstrings, strict=True):
+            target_file = target_file.replace(
+                node.ast_node.body[0].value.value,
+                docstring.to_str(add_triple_quotes=False),
+            )
+        if self.config.overwrite:
+            self._write_to_file(filename, target_file)
+        else:
+            self._generate_patch_file(source_file, target_file, filename)
+
+    def run(self):
         """Generates docstrings for the input files or directories."""
         filenames = self.get_filenames_from_paths()
         click.echo(click.style(title, fg="green"))
         loop = asyncio.get_event_loop()
 
         for filename in filenames:
-            loop.run_until_complete(self.generate_file_docstrings(filename))
+            if self.translate:
+                loop.run_until_complete(self.translate_file_docstrings(filename))
+            else:
+                loop.run_until_complete(self.generate_file_docstrings(filename))
 
         if not self.config.overwrite:
             self._write_concatenated_patch_file()

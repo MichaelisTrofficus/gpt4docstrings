@@ -14,6 +14,14 @@ from gpt4docstrings.config import GPT4DocstringsConfig
     help="The model to be used by `gpt4docstrings`. By default, `gpt-3.5-turbo`.",
 )
 @click.option(
+    "-t",
+    "--translate",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="If `True`, instead of creating new docstrings, it will translate the existing ones into the provided style",
+)
+@click.option(
     "-st",
     "--style",
     type=click.STRING,
@@ -148,13 +156,14 @@ def main(paths, **kwargs):
         ignore_property_decorators=kwargs["ignore_property_decorators"],
     )
 
-    docstrings_generator = gpt4docstrings.GPT4Docstrings(
+    gpt4docs = gpt4docstrings.GPT4Docstrings(
         paths=paths,
         excluded=kwargs["exclude"],
         model=kwargs["model"],
+        translate=kwargs["translate"],
         docstring_style=kwargs["style"],
         api_key=kwargs["api_key"],
         verbose=kwargs["verbose"],
         config=config,
     )
-    docstrings_generator.generate_docstrings()
+    gpt4docs.run()

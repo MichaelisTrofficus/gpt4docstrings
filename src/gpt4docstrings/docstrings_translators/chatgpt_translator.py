@@ -1,3 +1,4 @@
+import ast
 import os
 import textwrap
 
@@ -6,15 +7,14 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 from gpt4docstrings.docstring import Docstring
-from gpt4docstrings.docstrings_generators.base import DocstringGenerator
-from gpt4docstrings.prompts.generation.chatgpt import CLASS_PROMPTS
-from gpt4docstrings.prompts.generation.chatgpt import FUNCTION_PROMPTS
+from gpt4docstrings.docstrings_translators.base import DocstringTranslator
+from gpt4docstrings.prompts.translation.chatgpt import PROMPT
 from gpt4docstrings.utils.decorators import retry
 from gpt4docstrings.utils.parsers import DocstringParser
 from gpt4docstrings.visit import GPT4DocstringsNode
 
 
-class ChatGPTDocstringGenerator(DocstringGenerator):
+class ChatGPTDocstringTranslator(DocstringTranslator):
     """A class for generating Python docstrings using ChatGPT."""
 
     def __init__(
@@ -35,8 +35,7 @@ class ChatGPTDocstringGenerator(DocstringGenerator):
         self.model = ChatOpenAI(
             model_name=model_name, temperature=1.0, openai_api_key=self.api_key
         )
-        self.function_prompt_template = FUNCTION_PROMPTS.get(docstring_style)
-        self.class_prompt_template = CLASS_PROMPTS.get(docstring_style)
+        self.prompt_template = PROMPT
 
     async def _get_completion(self, prompt: str) -> str:
         """
@@ -50,17 +49,10 @@ class ChatGPTDocstringGenerator(DocstringGenerator):
         """
         return await self.model.apredict(prompt)
 
-    def _get_template(self, node: GPT4DocstringsNode):
-        """Returns a function template or a class template depending on the node type"""
-        if node.node_type in ["FunctionDef", "AsyncFunctionDef"]:
-            return self.function_prompt_template
-        else:
-            return self.class_prompt_template
-
     @retry()
-    async def generate_docstring(self, node: GPT4DocstringsNode) -> Docstring:
+    async def translate_docstring(self, node: GPT4DocstringsNode) -> Docstring:
         """
-        Generates a docstring for a function.
+        Translates a docstring for a function.
 
         Args:
             node (GPT4DocstringsNode): A GPT4DocstringsNode node
@@ -68,16 +60,17 @@ class ChatGPTDocstringGenerator(DocstringGenerator):
         Returns:
             Docstring: A Docstring object
         """
-        source = node.source.strip()
-        stripped_source = textwrap.dedent(source)
-        prompt_template = self._get_template(node)
+        docstring = ast.get_docstring(node.ast_node)
+        stripped_source = textwrap.dedent(docstring)
         parent_offset = node.col_offset
 
         prompt = PromptTemplate(
-            template=prompt_template,
-            input_variables=["code"],
+            template=self.prompt_template,
+            input_variables=["docstring", "style"],
         )
-        _input = prompt.format_prompt(code=stripped_source)
+        _input = prompt.format_prompt(
+            docstring=stripped_source, style=self.docstring_style
+        )
         docstring = DocstringParser().parse(
             await self._get_completion(_input.to_string())
         )
